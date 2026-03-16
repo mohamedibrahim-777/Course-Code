@@ -35,7 +35,7 @@ export default function Landing() {
           <motion.div variants={fadeUp} className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
               <Link to="/register" className="btn-glow w-full sm:w-auto bg-neutral-900 text-white px-10 py-4 rounded-2xl font-bold text-lg flex items-center justify-center gap-2">
-                Get Started Free <ArrowRight size={20} />
+                Get Started <ArrowRight size={20} />
               </Link>
             </motion.div>
             <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
