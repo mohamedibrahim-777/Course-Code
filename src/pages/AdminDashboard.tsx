@@ -1,0 +1,403 @@
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../AuthContext';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Plus, Users, BookOpen, BarChart3, Trash2, Edit, X, FileText, Save, ChevronDown, ChevronUp, Upload } from 'lucide-react';
+import { Course, Lesson } from '../types';
+
+export default function AdminDashboard() {
+  const { token } = useAuth();
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [students, setStudents] = useState<any[]>([]);
+  const [summary, setSummary] = useState<any>({});
+  const [showAddCourse, setShowAddCourse] = useState(false);
+  const [editingCourse, setEditingCourse] = useState<Course | null>(null);
+  const [managingLessons, setManagingLessons] = useState<number | null>(null);
+  const [courseLessons, setCourseLessons] = useState<Lesson[]>([]);
+  const [showAddLesson, setShowAddLesson] = useState(false);
+  const [newCourse, setNewCourse] = useState({ title: '', description: '', language: '', level: 'beginner' });
+  const [newLesson, setNewLesson] = useState({ title: '', content: '', video_url: '', resource_url: '', resource_type: 'pdf', order_index: 1 });
+  const [uploading, setUploading] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+
+  const fetchData = async () => {
+    try {
+      const [coursesRes, studentsRes, summaryRes] = await Promise.all([
+        fetch('/api/courses', { headers }),
+        fetch('/api/analytics/students', { headers }),
+        fetch('/api/analytics/summary', { headers }),
+      ]);
+      setCourses(await coursesRes.json());
+      setStudents(await studentsRes.json());
+      setSummary(await summaryRes.json());
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchData(); }, [token]);
+
+  const handleAddCourse = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const res = await fetch('/api/courses', { method: 'POST', headers, body: JSON.stringify(newCourse) });
+    if (res.ok) {
+      setShowAddCourse(false);
+      setNewCourse({ title: '', description: '', language: '', level: 'beginner' });
+      fetchData();
+    }
+  };
+
+  const handleEditCourse = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCourse) return;
+    const res = await fetch(`/api/courses/${editingCourse.id}`, { method: 'PUT', headers, body: JSON.stringify(editingCourse) });
+    if (res.ok) {
+      setEditingCourse(null);
+      fetchData();
+    }
+  };
+
+  const handleDeleteCourse = async (id: number) => {
+    if (!confirm('Delete this course and all its lessons?')) return;
+    const res = await fetch(`/api/courses/${id}`, { method: 'DELETE', headers });
+    if (res.ok) fetchData();
+  };
+
+  const openLessonManager = async (courseId: number) => {
+    if (managingLessons === courseId) { setManagingLessons(null); return; }
+    const res = await fetch(`/api/courses/${courseId}`, { headers });
+    const data = await res.json();
+    setCourseLessons(data.lessons || []);
+    setManagingLessons(courseId);
+    setShowAddLesson(false);
+  };
+
+  const handleAddLesson = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!managingLessons) return;
+    const res = await fetch('/api/lessons', {
+      method: 'POST', headers,
+      body: JSON.stringify({ ...newLesson, course_id: managingLessons }),
+    });
+    if (res.ok) {
+      setNewLesson({ title: '', content: '', video_url: '', resource_url: '', resource_type: 'pdf', order_index: courseLessons.length + 1 });
+      setShowAddLesson(false);
+      openLessonManager(managingLessons);
+      fetchData();
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: 'video_url' | 'resource_url') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (data.success) {
+        setNewLesson(prev => ({ ...prev, [field]: data.url }));
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDeleteLesson = async (lessonId: number) => {
+    if (!confirm('Delete this lesson?')) return;
+    const res = await fetch(`/api/lessons/${lessonId}`, { method: 'DELETE', headers });
+    if (res.ok && managingLessons) openLessonManager(managingLessons);
+  };
+
+  if (loading) return <div className="text-center py-20">Loading Admin Panel...</div>;
+
+  return (
+    <div className="space-y-8">
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-neutral-900">Staff Control Panel</h1>
+          <p className="text-neutral-500">Manage courses, lessons, and student progress.</p>
+        </div>
+        <button
+          onClick={() => setShowAddCourse(true)}
+          className="btn-glow bg-neutral-900 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-neutral-800 transition-all"
+        >
+          <Plus size={20} /> Create New Course
+        </button>
+      </header>
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <StatCard icon={<Users />} label="Total Students" value={summary.totalStudents || 0} color="blue" />
+        <StatCard icon={<BookOpen />} label="Active Courses" value={summary.totalCourses || 0} color="dark" />
+        <StatCard icon={<BarChart3 />} label="Avg. Progress" value={`${summary.avgProgress || 0}%`} color="amber" />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Course Management */}
+        <section className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-100">
+          <h2 className="text-xl font-bold text-neutral-900 mb-6 flex items-center gap-2">
+            <BookOpen className="text-neutral-900" size={24} /> Course Management
+          </h2>
+          {courses.length === 0 ? (
+            <p className="text-neutral-400 text-center py-8">No courses yet. Create your first course!</p>
+          ) : (
+            <div className="space-y-3">
+              {courses.map(course => (
+                <div key={course.id}>
+                  <div className="flex items-center justify-between p-4 bg-neutral-50 rounded-xl border border-neutral-100">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-bold text-neutral-900 truncate">{course.title}</h4>
+                      <p className="text-xs text-neutral-500 uppercase tracking-widest">{course.language} &bull; {course.level}</p>
+                    </div>
+                    <div className="flex gap-1 ml-3">
+                      <button onClick={() => openLessonManager(course.id)} className="p-2 text-neutral-400 hover:text-blue-600 transition-colors" title="Manage Lessons">
+                        <FileText size={18} />
+                      </button>
+                      <button onClick={() => setEditingCourse({ ...course })} className="p-2 text-neutral-400 hover:text-neutral-900 transition-colors" title="Edit Course">
+                        <Edit size={18} />
+                      </button>
+                      <button onClick={() => handleDeleteCourse(course.id)} className="p-2 text-neutral-400 hover:text-red-600 transition-colors" title="Delete Course">
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Lesson Manager (inline) */}
+                  <AnimatePresence>
+                    {managingLessons === course.id && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="ml-4 mt-2 p-4 bg-white border border-neutral-200 rounded-xl space-y-3">
+                          <div className="flex items-center justify-between">
+                            <h5 className="font-bold text-sm text-neutral-700">Lessons ({courseLessons.length})</h5>
+                            <button
+                              onClick={() => { setShowAddLesson(true); setNewLesson({ ...newLesson, order_index: courseLessons.length + 1 }); }}
+                              className="text-neutral-900 text-xs font-bold flex items-center gap-1 hover:underline"
+                            >
+                              <Plus size={14} /> Add Lesson
+                            </button>
+                          </div>
+                          {courseLessons.length === 0 && <p className="text-neutral-400 text-xs text-center py-2">No lessons yet.</p>}
+                          {courseLessons.map(lesson => (
+                            <div key={lesson.id} className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg text-sm">
+                              <div>
+                                <span className="text-neutral-400 mr-2">#{lesson.order_index}</span>
+                                <span className="font-medium text-neutral-800">{lesson.title}</span>
+                              </div>
+                              <button onClick={() => handleDeleteLesson(lesson.id)} className="text-neutral-400 hover:text-red-500">
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          ))}
+
+                          {/* Add Lesson Form */}
+                          {showAddLesson && (
+                            <form onSubmit={handleAddLesson} className="space-y-3 pt-3 border-t border-neutral-100">
+                              <input type="text" required placeholder="Lesson Title" value={newLesson.title}
+                                onChange={e => setNewLesson({ ...newLesson, title: e.target.value })}
+                                className="w-full px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-neutral-800"
+                              />
+                              <textarea placeholder="Lesson Content" value={newLesson.content}
+                                onChange={e => setNewLesson({ ...newLesson, content: e.target.value })}
+                                className="w-full px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-neutral-800 h-20"
+                              />
+                              <div>
+                                <label className="flex items-center gap-2 px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm cursor-pointer hover:bg-neutral-100 transition-colors">
+                                  <Upload size={16} className="text-neutral-500" />
+                                  <span className="text-neutral-500">{newLesson.video_url ? 'Video uploaded' : 'Upload Video (optional)'}</span>
+                                  <input type="file" accept="video/*" className="hidden" onChange={e => handleFileUpload(e, 'video_url')} />
+                                </label>
+                                {newLesson.video_url && <p className="text-xs text-green-600 mt-1">Uploaded: {newLesson.video_url.split('/').pop()}</p>}
+                              </div>
+                              <div>
+                                <label className="flex items-center gap-2 px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm cursor-pointer hover:bg-neutral-100 transition-colors">
+                                  <Upload size={16} className="text-neutral-500" />
+                                  <span className="text-neutral-500">{newLesson.resource_url ? 'Resource uploaded' : 'Upload Resource (optional)'}</span>
+                                  <input type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg" className="hidden" onChange={e => handleFileUpload(e, 'resource_url')} />
+                                </label>
+                                {newLesson.resource_url && <p className="text-xs text-green-600 mt-1">Uploaded: {newLesson.resource_url.split('/').pop()}</p>}
+                              </div>
+                              {uploading && <p className="text-xs text-neutral-500 animate-pulse">Uploading file...</p>}
+                              <div className="flex gap-2">
+                                <select value={newLesson.resource_type} onChange={e => setNewLesson({ ...newLesson, resource_type: e.target.value })}
+                                  className="flex-1 px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm outline-none">
+                                  <option value="pdf">PDF</option>
+                                  <option value="doc">Document</option>
+                                  <option value="excel">Excel</option>
+                                  <option value="image">Image</option>
+                                </select>
+                                <input type="number" min={1} value={newLesson.order_index}
+                                  onChange={e => setNewLesson({ ...newLesson, order_index: parseInt(e.target.value) })}
+                                  className="w-20 px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm outline-none" placeholder="#"
+                                />
+                              </div>
+                              <div className="flex gap-2">
+                                <button type="button" onClick={() => setShowAddLesson(false)}
+                                  className="flex-1 py-2 bg-neutral-100 text-neutral-600 font-bold rounded-lg text-sm hover:bg-neutral-200">Cancel</button>
+                                <button type="submit"
+                                  className="btn-glow flex-1 py-2 bg-neutral-900 text-white font-bold rounded-lg text-sm hover:bg-neutral-800">Add Lesson</button>
+                              </div>
+                            </form>
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Student Progress */}
+        <section className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-100">
+          <h2 className="text-xl font-bold text-neutral-900 mb-6 flex items-center gap-2">
+            <Users className="text-blue-600" size={24} /> Student Progress
+          </h2>
+          {students.length === 0 ? (
+            <p className="text-neutral-400 text-center py-8">No students registered yet.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="text-xs text-neutral-400 uppercase tracking-widest border-b border-neutral-100">
+                    <th className="pb-4 font-semibold">Student</th>
+                    <th className="pb-4 font-semibold">Completed</th>
+                    <th className="pb-4 font-semibold">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-50">
+                  {students.map(student => (
+                    <tr key={student.id}>
+                      <td className="py-4">
+                        <div className="font-bold text-neutral-900">{student.name}</div>
+                        <div className="text-xs text-neutral-500">{student.email}</div>
+                      </td>
+                      <td className="py-4 text-sm text-neutral-600">{student.lessons_completed} Lessons</td>
+                      <td className="py-4">
+                        <span className={`px-2 py-1 text-[10px] font-bold rounded-full uppercase ${
+                          student.lessons_completed > 0 ? 'bg-neutral-100 text-neutral-900' : 'bg-neutral-100 text-neutral-400'
+                        }`}>
+                          {student.lessons_completed > 0 ? 'Active' : 'New'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      </div>
+
+      {/* Add Course Modal */}
+      <Modal show={showAddCourse} onClose={() => setShowAddCourse(false)} title="Create New Course">
+        <form onSubmit={handleAddCourse} className="space-y-4">
+          <Input label="Course Title" required value={newCourse.title} onChange={v => setNewCourse({ ...newCourse, title: v })} placeholder="e.g. Python for Beginners" />
+          <Input label="Language" required value={newCourse.language} onChange={v => setNewCourse({ ...newCourse, language: v })} placeholder="e.g. Python" />
+          <div>
+            <label className="block text-sm font-semibold text-neutral-700 mb-1">Level</label>
+            <select value={newCourse.level} onChange={e => setNewCourse({ ...newCourse, level: e.target.value })}
+              className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl outline-none focus:ring-2 focus:ring-neutral-800">
+              <option value="beginner">Beginner</option>
+              <option value="intermediate">Intermediate</option>
+              <option value="advanced">Advanced</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-neutral-700 mb-1">Description</label>
+            <textarea required value={newCourse.description} onChange={e => setNewCourse({ ...newCourse, description: e.target.value })}
+              className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl outline-none focus:ring-2 focus:ring-neutral-800 h-24" placeholder="What will students learn?" />
+          </div>
+          <ModalButtons onCancel={() => setShowAddCourse(false)} submitText="Create Course" />
+        </form>
+      </Modal>
+
+      {/* Edit Course Modal */}
+      <Modal show={!!editingCourse} onClose={() => setEditingCourse(null)} title="Edit Course">
+        {editingCourse && (
+          <form onSubmit={handleEditCourse} className="space-y-4">
+            <Input label="Course Title" required value={editingCourse.title} onChange={v => setEditingCourse({ ...editingCourse, title: v })} />
+            <Input label="Language" required value={editingCourse.language} onChange={v => setEditingCourse({ ...editingCourse, language: v })} />
+            <div>
+              <label className="block text-sm font-semibold text-neutral-700 mb-1">Level</label>
+              <select value={editingCourse.level} onChange={e => setEditingCourse({ ...editingCourse, level: e.target.value as any })}
+                className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl outline-none focus:ring-2 focus:ring-neutral-800">
+                <option value="beginner">Beginner</option>
+                <option value="intermediate">Intermediate</option>
+                <option value="advanced">Advanced</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-neutral-700 mb-1">Description</label>
+              <textarea required value={editingCourse.description} onChange={e => setEditingCourse({ ...editingCourse, description: e.target.value })}
+                className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl outline-none focus:ring-2 focus:ring-neutral-800 h-24" />
+            </div>
+            <ModalButtons onCancel={() => setEditingCourse(null)} submitText="Save Changes" />
+          </form>
+        )}
+      </Modal>
+    </div>
+  );
+}
+
+function Modal({ show, onClose, title, children }: { show: boolean; onClose: () => void; title: string; children: React.ReactNode }) {
+  if (!show) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={onClose}>
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+        className="bg-white w-full max-w-md p-8 rounded-3xl shadow-2xl" onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-2xl font-bold text-neutral-900">{title}</h3>
+          <button onClick={onClose} className="text-neutral-400 hover:text-neutral-600"><X size={20} /></button>
+        </div>
+        {children}
+      </motion.div>
+    </div>
+  );
+}
+
+function Input({ label, value, onChange, ...props }: any) {
+  return (
+    <div>
+      <label className="block text-sm font-semibold text-neutral-700 mb-1">{label}</label>
+      <input type="text" value={value} onChange={e => onChange(e.target.value)}
+        className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl outline-none focus:ring-2 focus:ring-neutral-800" {...props} />
+    </div>
+  );
+}
+
+function ModalButtons({ onCancel, submitText }: { onCancel: () => void; submitText: string }) {
+  return (
+    <div className="flex gap-3 pt-4">
+      <button type="button" onClick={onCancel} className="flex-1 py-3 bg-neutral-100 text-neutral-600 font-bold rounded-xl hover:bg-neutral-200 transition-colors">Cancel</button>
+      <button type="submit" className="btn-glow flex-1 py-3 bg-neutral-900 text-white font-bold rounded-xl hover:bg-neutral-800 transition-all">{submitText}</button>
+    </div>
+  );
+}
+
+function StatCard({ icon, label, value, color }: any) {
+  const colors: any = { dark: 'bg-neutral-100 text-neutral-900', blue: 'bg-neutral-100 text-neutral-700', amber: 'bg-neutral-100 text-neutral-700' };
+  return (
+    <div className="card-hover bg-white p-6 rounded-2xl shadow-sm border border-neutral-100 flex items-center gap-4">
+      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${colors[color]}`}>{icon}</div>
+      <div>
+        <p className="text-xs text-neutral-500 font-medium uppercase tracking-widest">{label}</p>
+        <p className="text-2xl font-bold text-neutral-900">{value}</p>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,113 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Smooth scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f5f5f5;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d4d4d4;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a3a3a3;
+}
+
+/* ── Glow buttons ── */
+.btn-glow {
+  position: relative;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 0px rgba(0, 0, 0, 0);
+}
+
+.btn-glow:hover {
+  box-shadow:
+    0 0 15px rgba(0, 0, 0, 0.3),
+    0 0 40px rgba(0, 0, 0, 0.15),
+    0 0 80px rgba(0, 0, 0, 0.05);
+  transform: translateY(-1px);
+}
+
+.btn-glow:active {
+  transform: translateY(0px);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
+/* Red glow for logout / danger */
+.btn-glow-red {
+  position: relative;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 0px rgba(220, 38, 38, 0);
+}
+
+.btn-glow-red:hover {
+  background-color: #dc2626 !important;
+  color: #fff !important;
+  box-shadow:
+    0 0 15px rgba(220, 38, 38, 0.4),
+    0 0 40px rgba(220, 38, 38, 0.2),
+    0 0 80px rgba(220, 38, 38, 0.08);
+  transform: translateY(-1px);
+}
+
+.btn-glow-red:active {
+  transform: translateY(0px);
+  box-shadow: 0 0 10px rgba(220, 38, 38, 0.3);
+}
+
+/* White glow for secondary buttons */
+.btn-glow-white {
+  position: relative;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-glow-white:hover {
+  box-shadow:
+    0 0 12px rgba(0, 0, 0, 0.08),
+    0 0 30px rgba(0, 0, 0, 0.04);
+  transform: translateY(-1px);
+}
+
+/* Inputs - visible cursor */
+input,
+textarea,
+select {
+  caret-color: #171717;
+  cursor: text;
+}
+
+input:focus,
+textarea:focus {
+  caret-color: #171717;
+}
+
+/* Card hover lift */
+.card-hover {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 20px 40px rgba(0, 0, 0, 0.08),
+    0 8px 16px rgba(0, 0, 0, 0.04);
+}
