@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
-import { motion } from 'framer-motion';
-import { CheckCircle, Download, FileText, ChevronRight, BookOpen, Video, Mail, ArrowLeft, Lock, Clock, Eye, FileDown } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { CheckCircle, Download, FileText, ChevronRight, BookOpen, Video, Mail, ArrowLeft, Lock, Clock, Eye, FileDown, MessageCircle, Send, Reply, Trash2, Shield } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Course, Lesson } from '../types';
 
@@ -304,6 +304,9 @@ export default function CourseView() {
                   })()}
                 </div>
                 </div>
+
+                {/* Doubt / Comment Section */}
+                <DoubtSection lessonId={activeLesson.id} />
               </div>
             </motion.div>
           ) : (
@@ -378,6 +381,207 @@ export default function CourseView() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+interface Comment {
+  id: number;
+  lesson_id: number;
+  user_id: number;
+  parent_id: number | null;
+  content: string;
+  created_at: string;
+  user_name: string;
+  user_role: string;
+  profile_pic: string | null;
+}
+
+function DoubtSection({ lessonId }: { lessonId: number }) {
+  const { token, user } = useAuth();
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [newComment, setNewComment] = useState('');
+  const [replyTo, setReplyTo] = useState<Comment | null>(null);
+  const [replyText, setReplyText] = useState('');
+  const [loading, setLoading] = useState(false);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const fetchComments = async () => {
+    try {
+      const res = await fetch(`/api/lessons/${lessonId}/comments`, { headers: { Authorization: `Bearer ${token}` } });
+      setComments(await res.json());
+    } catch (e) { console.error(e); }
+  };
+
+  useEffect(() => { fetchComments(); }, [lessonId]);
+
+  const postComment = async (content: string, parentId?: number) => {
+    if (!content.trim()) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/lessons/${lessonId}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ content, parent_id: parentId }),
+      });
+      if (res.ok) {
+        setNewComment('');
+        setReplyTo(null);
+        setReplyText('');
+        fetchComments();
+      }
+    } catch (e) { console.error(e); }
+    setLoading(false);
+  };
+
+  const deleteComment = async (id: number) => {
+    if (!confirm('Delete this comment?')) return;
+    await fetch(`/api/comments/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+    fetchComments();
+  };
+
+  const topLevel = comments.filter(c => !c.parent_id);
+  const getReplies = (id: number) => comments.filter(c => c.parent_id === id);
+
+  const roleBadge = (role: string) => {
+    if (role === 'staff') return <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase rounded bg-[#0077FF]/20 text-[#0077FF]">Staff</span>;
+    if (role === 'hod') return <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase rounded bg-[#DC143C]/20 text-[#DC143C]">HOD</span>;
+    return null;
+  };
+
+  const timeAgo = (date: string) => {
+    const diff = Date.now() - new Date(date + (date.includes('Z') ? '' : 'Z')).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    return `${Math.floor(hrs / 24)}d ago`;
+  };
+
+  return (
+    <div className="mt-10 pt-8 border-t border-neutral-100">
+      <h3 className="text-lg font-bold text-neutral-900 flex items-center gap-2 mb-6">
+        <MessageCircle size={20} className="text-[#0077FF]" /> Doubts & Discussion
+        {topLevel.length > 0 && <span className="text-xs bg-neutral-100 text-neutral-500 px-2 py-0.5 rounded-full">{comments.length}</span>}
+      </h3>
+
+      {/* Post new doubt */}
+      <div className="mb-6">
+        <textarea
+          ref={inputRef}
+          value={newComment}
+          onChange={e => setNewComment(e.target.value)}
+          placeholder="Ask a doubt or share your thoughts..."
+          className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl outline-none focus:ring-2 focus:ring-[#0077FF]/40 text-sm resize-none h-20"
+        />
+        <div className="flex justify-end mt-2">
+          <button
+            onClick={() => postComment(newComment)}
+            disabled={!newComment.trim() || loading}
+            className="bg-[#0077FF] text-white px-5 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-[#0066DD] transition-colors disabled:opacity-40"
+          >
+            <Send size={14} /> Post
+          </button>
+        </div>
+      </div>
+
+      {/* Comments list */}
+      {topLevel.length === 0 ? (
+        <p className="text-neutral-400 text-sm text-center py-6">No doubts yet. Be the first to ask!</p>
+      ) : (
+        <div className="space-y-4">
+          <AnimatePresence>
+            {topLevel.map(comment => (
+              <motion.div
+                key={comment.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="bg-neutral-50 border border-neutral-100 rounded-2xl p-4"
+              >
+                {/* Comment header */}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-7 h-7 rounded-full bg-neutral-200 flex items-center justify-center text-[10px] font-bold text-neutral-600 shrink-0">
+                      {comment.user_name[0].toUpperCase()}
+                    </div>
+                    <span className="text-sm font-bold text-neutral-900">{comment.user_name}</span>
+                    {roleBadge(comment.user_role)}
+                    <span className="text-[10px] text-neutral-400">{timeAgo(comment.created_at)}</span>
+                  </div>
+                  {(comment.user_id === user?.id || user?.role !== 'student') && (
+                    <button onClick={() => deleteComment(comment.id)} className="text-neutral-300 hover:text-[#DC143C] transition-colors p-1">
+                      <Trash2 size={13} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Comment body */}
+                <p className="text-sm text-neutral-700 leading-relaxed ml-9 whitespace-pre-wrap">{comment.content}</p>
+
+                {/* Reply button */}
+                <div className="ml-9 mt-2">
+                  <button
+                    onClick={() => { setReplyTo(replyTo?.id === comment.id ? null : comment); setReplyText(''); }}
+                    className="text-[11px] font-bold text-neutral-400 hover:text-[#0077FF] flex items-center gap-1 transition-colors"
+                  >
+                    <Reply size={12} /> Reply
+                  </button>
+                </div>
+
+                {/* Replies */}
+                {getReplies(comment.id).length > 0 && (
+                  <div className="ml-9 mt-3 space-y-3 pl-4 border-l-2 border-neutral-200">
+                    {getReplies(comment.id).map(reply => (
+                      <div key={reply.id} className="flex items-start gap-2">
+                        <div className="w-6 h-6 rounded-full bg-neutral-200 flex items-center justify-center text-[9px] font-bold text-neutral-600 shrink-0 mt-0.5">
+                          {reply.user_name[0].toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs font-bold text-neutral-900">{reply.user_name}</span>
+                            {roleBadge(reply.user_role)}
+                            <span className="text-[10px] text-neutral-400">{timeAgo(reply.created_at)}</span>
+                            {(reply.user_id === user?.id || user?.role !== 'student') && (
+                              <button onClick={() => deleteComment(reply.id)} className="text-neutral-300 hover:text-[#DC143C] transition-colors">
+                                <Trash2 size={11} />
+                              </button>
+                            )}
+                          </div>
+                          <p className="text-xs text-neutral-600 leading-relaxed mt-0.5 whitespace-pre-wrap">{reply.content}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Reply input */}
+                {replyTo?.id === comment.id && (
+                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="ml-9 mt-3">
+                    <div className="flex gap-2">
+                      <textarea
+                        autoFocus
+                        value={replyText}
+                        onChange={e => setReplyText(e.target.value)}
+                        placeholder={`Reply to ${comment.user_name}...`}
+                        className="flex-1 px-3 py-2 bg-white border border-neutral-200 rounded-lg outline-none focus:ring-2 focus:ring-[#0077FF]/40 text-xs resize-none h-16"
+                      />
+                      <button
+                        onClick={() => postComment(replyText, comment.id)}
+                        disabled={!replyText.trim() || loading}
+                        className="bg-[#0077FF] text-white px-3 rounded-lg text-xs font-bold hover:bg-[#0066DD] transition-colors disabled:opacity-40 self-end py-2"
+                      >
+                        <Send size={12} />
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
+      )}
     </div>
   );
 }

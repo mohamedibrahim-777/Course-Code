@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, Users, BookOpen, Activity, ChevronRight, BarChart, PieChart, TrendingUp, X, Mail } from 'lucide-react';
+import { Shield, Users, BookOpen, Activity, ChevronRight, BarChart, PieChart, TrendingUp, X, Mail, Timer, Coffee, Zap } from 'lucide-react';
 
 export default function HODDashboard() {
   const { token } = useAuth();
@@ -12,21 +12,24 @@ export default function HODDashboard() {
   const [loading, setLoading] = useState(true);
   const [showReport, setShowReport] = useState(false);
   const [reportType, setReportType] = useState<'staff' | 'students' | 'courses'>('staff');
+  const [focusData, setFocusData] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
       const headers = { Authorization: `Bearer ${token}` };
       try {
-        const [staffRes, studentsRes, coursesRes, summaryRes] = await Promise.all([
+        const [staffRes, studentsRes, coursesRes, summaryRes, focusRes] = await Promise.all([
           fetch('/api/analytics/staff', { headers }),
           fetch('/api/analytics/students', { headers }),
           fetch('/api/courses', { headers }),
           fetch('/api/analytics/summary', { headers }),
+          fetch('/api/analytics/focus', { headers }),
         ]);
         setStaff(await staffRes.json());
         setStudents(await studentsRes.json());
         setCourses(await coursesRes.json());
         setSummary(await summaryRes.json());
+        setFocusData(await focusRes.json());
       } catch (err) {
         console.error(err);
       } finally {
@@ -58,15 +61,15 @@ export default function HODDashboard() {
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <button onClick={() => openReport('students')} className="text-left">
+        <div onClick={() => openReport('students')} className="cursor-pointer">
           <StatCard icon={<Users />} label="Total Students" value={summary.totalStudents || students.length} />
-        </button>
-        <button onClick={() => openReport('staff')} className="text-left">
+        </div>
+        <div onClick={() => openReport('staff')} className="cursor-pointer">
           <StatCard icon={<Shield />} label="Staff Members" value={summary.totalStaff || staff.length} />
-        </button>
-        <button onClick={() => openReport('courses')} className="text-left">
+        </div>
+        <div onClick={() => openReport('courses')} className="cursor-pointer">
           <StatCard icon={<BookOpen />} label="Total Courses" value={summary.totalCourses || courses.length} />
-        </button>
+        </div>
         <StatCard icon={<Activity />} label="System Health" value="Optimal" />
       </div>
 
@@ -158,6 +161,69 @@ export default function HODDashboard() {
         </section>
       </div>
 
+      {/* Student Focus Tracker */}
+      <section className="bg-white p-8 rounded-3xl shadow-sm border border-neutral-100">
+        <h2 className="text-xl font-bold text-neutral-900 mb-6 flex items-center gap-2">
+          <Timer className="text-[#0077FF]" size={24} /> Student Focus Tracker
+        </h2>
+        {focusData.length === 0 || focusData.every((s: any) => s.focus_count === 0 && s.break_count === 0) ? (
+          <p className="text-neutral-400 text-center py-8">No focus session data yet.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="text-xs text-neutral-400 uppercase tracking-widest border-b border-neutral-100">
+                  <th className="pb-4 font-semibold">Student</th>
+                  <th className="pb-4 font-semibold">Focus Sessions</th>
+                  <th className="pb-4 font-semibold">Total Focus</th>
+                  <th className="pb-4 font-semibold">Breaks</th>
+                  <th className="pb-4 font-semibold">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-50">
+                {focusData.map((s: any) => {
+                  const focusMins = Math.floor(s.total_focus_seconds / 60);
+                  const breakMins = Math.floor(s.total_break_seconds / 60);
+                  const isActive = s.last_session && (Date.now() - new Date(s.last_session + 'Z').getTime()) < 35 * 60 * 1000;
+                  return (
+                    <tr key={s.id}>
+                      <td className="py-4">
+                        <div className="font-bold text-neutral-900">{s.name}</div>
+                        <div className="text-xs text-neutral-500">{s.email}</div>
+                      </td>
+                      <td className="py-4">
+                        <span className="flex items-center gap-1.5 text-sm text-neutral-600">
+                          <Zap size={14} className="text-[#0077FF]" /> {s.focus_count}
+                        </span>
+                      </td>
+                      <td className="py-4">
+                        <span className="text-sm font-bold text-neutral-900">{focusMins >= 60 ? `${Math.floor(focusMins/60)}h ${focusMins%60}m` : `${focusMins}m`}</span>
+                      </td>
+                      <td className="py-4">
+                        <span className="flex items-center gap-1.5 text-sm text-neutral-600">
+                          <Coffee size={14} className="text-green-500" /> {s.break_count} ({breakMins}m)
+                        </span>
+                      </td>
+                      <td className="py-4">
+                        {s.focus_count === 0 ? (
+                          <span className="px-2 py-1 text-[10px] font-bold rounded-full uppercase bg-neutral-100 text-neutral-400">No data</span>
+                        ) : isActive ? (
+                          <span className="px-2 py-1 text-[10px] font-bold rounded-full uppercase bg-green-500/20 text-green-400 flex items-center gap-1 w-fit">
+                            <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" /> Active
+                          </span>
+                        ) : (
+                          <span className="px-2 py-1 text-[10px] font-bold rounded-full uppercase bg-neutral-100 text-neutral-500">Offline</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
       {/* Full Report Modal */}
       <AnimatePresence>
         {showReport && (
@@ -236,10 +302,15 @@ export default function HODDashboard() {
 
 function StatCard({ icon, label, value }: any) {
   return (
-    <div className="card-hover bg-white p-6 rounded-2xl shadow-sm border border-neutral-100 cursor-pointer">
+    <motion.div
+      whileHover={{ scale: 1.03, boxShadow: '0 0 18px rgba(0,119,255,0.3), 0 0 40px rgba(0,119,255,0.1)' }}
+      whileTap={{ scale: 0.97, boxShadow: '0 0 24px rgba(0,119,255,0.5), 0 0 60px rgba(0,119,255,0.15)' }}
+      transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+      className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-100 cursor-pointer"
+    >
       <div className="text-neutral-900 mb-3">{icon}</div>
       <p className="text-xs text-neutral-500 font-medium uppercase tracking-widest">{label}</p>
       <p className="text-2xl font-bold text-neutral-900 mt-1">{value}</p>
-    </div>
+    </motion.div>
   );
 }

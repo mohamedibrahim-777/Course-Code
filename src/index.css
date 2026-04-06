@@ -12,6 +12,7 @@ body {
   font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background: #060611;
 }
 
 /* Smooth scrollbar */
@@ -20,16 +21,16 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #f5f5f5;
+  background: #0a0a1a;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #d4d4d4;
+  background: rgba(255, 255, 255, 0.12);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #a3a3a3;
+  background: rgba(255, 255, 255, 0.25);
 }
 
 /* ── Glow buttons ── */
@@ -110,4 +111,164 @@ textarea:focus {
   box-shadow:
     0 20px 40px rgba(0, 0, 0, 0.08),
     0 8px 16px rgba(0, 0, 0, 0.04);
+}
+
+/* ── Universal button glow ── */
+button,
+[type="submit"],
+a[class*="rounded"] {
+  transition: box-shadow 0.35s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s ease, background 0.3s ease;
+}
+
+/* Subtle glow on hover */
+button:hover,
+[type="submit"]:hover,
+a[class*="rounded"]:hover {
+  box-shadow:
+    0 0 10px rgba(0, 119, 255, 0.25),
+    0 0 25px rgba(0, 119, 255, 0.1);
+}
+
+/* Bright pulse on press / touch */
+button:active,
+[type="submit"]:active,
+a[class*="rounded"]:active {
+  box-shadow:
+    0 0 16px rgba(0, 119, 255, 0.6),
+    0 0 40px rgba(0, 119, 255, 0.25),
+    0 0 80px rgba(0, 119, 255, 0.1);
+  transform: scale(0.97);
+}
+
+/* Crimson glow for danger / logout buttons */
+button[class*="DC143C"]:hover,
+button[class*="DC143C"]:active {
+  box-shadow:
+    0 0 14px rgba(220, 20, 60, 0.5),
+    0 0 35px rgba(220, 20, 60, 0.2),
+    0 0 70px rgba(220, 20, 60, 0.08) !important;
+}
+
+/* Green glow for success / break buttons */
+button[class*="green"]:hover,
+button[class*="green"]:active {
+  box-shadow:
+    0 0 12px rgba(34, 197, 94, 0.4),
+    0 0 30px rgba(34, 197, 94, 0.15) !important;
+}
+
+/* ══════════════════════════════════
+   Dark Background — Glass Theme
+   ══════════════════════════════════ */
+
+.dark-bg {
+  color: #f0f0f5;
+}
+
+/* ── Glass panels ── */
+.dark-bg .bg-white {
+  background: rgba(255, 255, 255, 0.06) !important;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.dark-bg .bg-white\/80 {
+  background: rgba(12, 12, 35, 0.65) !important;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+.dark-bg .bg-white\/95 {
+  background: rgba(12, 12, 35, 0.88) !important;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+/* ── Subtle fills ── */
+.dark-bg .bg-neutral-50 {
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+
+.dark-bg .bg-neutral-100 {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.dark-bg .bg-neutral-200 {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* ── Text: dark → light ── */
+.dark-bg .text-neutral-900 { color: #f0f0f5 !important; }
+.dark-bg .text-neutral-800 { color: #e0e0e8 !important; }
+.dark-bg .text-neutral-700 { color: #c8c8d4 !important; }
+.dark-bg .text-neutral-600 { color: #9898a8 !important; }
+
+/* ── Borders ── */
+.dark-bg .border-neutral-50  { border-color: rgba(255, 255, 255, 0.04) !important; }
+.dark-bg .border-neutral-100 { border-color: rgba(255, 255, 255, 0.06) !important; }
+.dark-bg .border-neutral-200 { border-color: rgba(255, 255, 255, 0.1) !important; }
+.dark-bg .border-neutral-200\/60 { border-color: rgba(255, 255, 255, 0.06) !important; }
+.dark-bg .border-neutral-700 { border-color: rgba(255, 255, 255, 0.12) !important; }
+.dark-bg .divide-neutral-50 > * + * { border-color: rgba(255, 255, 255, 0.04) !important; }
+
+/* ── Shadows → glass glow ── */
+.dark-bg .shadow-sm  { box-shadow: 0 0 15px rgba(0, 119, 255, 0.05), 0 2px 8px rgba(0,0,0,0.3) !important; }
+.dark-bg .shadow-lg  { box-shadow: 0 0 25px rgba(0, 119, 255, 0.08), 0 4px 16px rgba(0,0,0,0.35) !important; }
+.dark-bg .shadow-xl  { box-shadow: 0 0 30px rgba(0, 119, 255, 0.1), 0 8px 24px rgba(0,0,0,0.4) !important; }
+.dark-bg .shadow-2xl { box-shadow: 0 0 40px rgba(0, 119, 255, 0.12), 0 12px 36px rgba(0,0,0,0.5) !important; }
+
+/* ── Inputs ── */
+.dark-bg input,
+.dark-bg textarea,
+.dark-bg select {
+  color: #f0f0f5 !important;
+  caret-color: #e0e0e8 !important;
+}
+.dark-bg input::placeholder,
+.dark-bg textarea::placeholder {
+  color: rgba(255, 255, 255, 0.3) !important;
+}
+.dark-bg input:disabled {
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+.dark-bg select option {
+  background: #0f0f28;
+  color: #f0f0f5;
+}
+.dark-bg input:focus,
+.dark-bg textarea:focus,
+.dark-bg select:focus {
+  border-color: rgba(0, 100, 220, 0.4) !important;
+  box-shadow: 0 0 0 2px rgba(0, 100, 220, 0.2) !important;
+}
+
+/* ── Colored feedback (dark-safe) ── */
+.dark-bg .bg-red-50    { background: rgba(239, 68, 68, 0.1) !important; }
+.dark-bg .bg-green-50  { background: rgba(34, 197, 94, 0.1) !important; }
+.dark-bg .bg-green-100 { background: rgba(34, 197, 94, 0.15) !important; }
+.dark-bg .bg-amber-50  { background: rgba(245, 158, 11, 0.1) !important; }
+.dark-bg .text-red-600   { color: #f87171 !important; }
+.dark-bg .text-green-600 { color: #4ade80 !important; }
+.dark-bg .text-green-700 { color: #22c55e !important; }
+.dark-bg .text-amber-700 { color: #fbbf24 !important; }
+.dark-bg .text-amber-800 { color: #f59e0b !important; }
+.dark-bg .text-blue-600  { color: #60a5fa !important; }
+.dark-bg .border-red-100   { border-color: rgba(239, 68, 68, 0.15) !important; }
+.dark-bg .border-amber-200 { border-color: rgba(245, 158, 11, 0.2) !important; }
+.dark-bg .border-green-200 { border-color: rgba(34, 197, 94, 0.2) !important; }
+
+/* ── Hover states ── */
+.dark-bg .hover\:bg-neutral-50:hover  { background: rgba(255, 255, 255, 0.08) !important; }
+.dark-bg .hover\:bg-neutral-100:hover { background: rgba(255, 255, 255, 0.1) !important; }
+.dark-bg .hover\:bg-neutral-200:hover { background: rgba(255, 255, 255, 0.12) !important; }
+.dark-bg .hover\:bg-neutral-800:hover { background: rgba(255, 255, 255, 0.08) !important; }
+.dark-bg .hover\:text-neutral-900:hover { color: #f0f0f5 !important; }
+.dark-bg .hover\:text-neutral-700:hover { color: #c8c8d4 !important; }
+.dark-bg .hover\:text-neutral-600:hover { color: #9898a8 !important; }
+.dark-bg .hover\:border-neutral-900:hover { border-color: rgba(255, 255, 255, 0.3) !important; }
+.dark-bg .hover\:shadow-lg:hover { box-shadow: 0 0 25px rgba(0, 119, 255, 0.12), 0 4px 16px rgba(0,0,0,0.35) !important; }
+
+/* ── Glass card hover ── */
+.dark-bg .card-hover:hover {
+  box-shadow: 0 0 30px rgba(0, 119, 255, 0.08), 0 20px 40px rgba(0,0,0,0.3) !important;
 }

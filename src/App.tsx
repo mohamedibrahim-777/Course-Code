@@ -21,17 +21,18 @@ import Landing from './pages/Landing';
 // Components
 import Navbar from './components/Navbar';
 import LoadingScreen from './components/LoadingScreen';
+import AnimatedBackground from './components/AnimatedBackground';
 
 const pageVariants = {
-  initial: { opacity: 0, y: 12 },
+  initial: { opacity: 0, y: 6 },
   in: { opacity: 1, y: 0 },
-  out: { opacity: 0, y: -8 },
+  out: { opacity: 0, y: -4 },
 };
 
 const pageTransition = {
   type: 'tween',
   ease: [0.4, 0, 0.2, 1],
-  duration: 0.35,
+  duration: 0.12,
 };
 
 const PageWrapper = ({ children }: { children: React.ReactNode }) => (
@@ -61,7 +62,7 @@ const AppContent = () => {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50 font-sans text-neutral-900 flex flex-col">
+    <div className="dark-bg min-h-screen font-sans flex flex-col relative z-10">
       <Navbar />
       <main className="container mx-auto px-4 py-8 flex-1">
         <AnimatePresence mode="wait">
@@ -93,11 +94,11 @@ const Footer = () => (
     initial={{ opacity: 0 }}
     animate={{ opacity: 1 }}
     transition={{ delay: 0.5, duration: 0.6 }}
-    className="bg-white border-t border-neutral-200 py-8 mt-auto"
+    className="bg-[#0a0a1a]/50 backdrop-blur-2xl border-t border-white/8 py-8 mt-auto"
   >
-    <div className="container mx-auto px-4 text-center text-neutral-500 text-sm">
+    <div className="container mx-auto px-4 text-center text-neutral-400 text-sm">
       <p>&copy; 2026 Course Code. All rights reserved.</p>
-      <p className="mt-2 italic">Empowering the next generation of developers.</p>
+      <p className="mt-2 italic text-neutral-500">Empowering the next generation of developers.</p>
     </div>
   </motion.footer>
 );
@@ -106,6 +107,7 @@ export default function App() {
   return (
     <AuthProvider>
       <Router>
+        <AnimatedBackground />
         <AppContent />
       </Router>
     </AuthProvider>

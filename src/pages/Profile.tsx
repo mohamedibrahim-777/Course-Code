@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../AuthContext';
 import { motion } from 'framer-motion';
-import { User, Mail, Camera, Save, Shield, Info, Lock, Eye, EyeOff } from 'lucide-react';
+import { User, Mail, Camera, Save, Shield, Info, Lock, Eye, EyeOff, Trash2 } from 'lucide-react';
 
 export default function Profile() {
   const { user, token, login } = useAuth();
@@ -74,7 +74,7 @@ export default function Profile() {
     }
   };
 
-  const avatarUrl = formData.profile_pic || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email}`;
+  const avatarUrl = formData.profile_pic || '';
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -98,15 +98,29 @@ export default function Profile() {
         <div className="space-y-6">
           <div className="bg-white p-8 rounded-3xl shadow-sm border border-neutral-100 text-center">
             <div className="relative inline-block mb-6">
-              <div className="w-32 h-32 bg-neutral-100 rounded-full overflow-hidden border-4 border-white shadow-lg">
-                <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+              <div className="w-32 h-32 bg-neutral-100 rounded-full overflow-hidden border-4 border-white shadow-lg flex items-center justify-center">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <User size={48} className="text-neutral-300" />
+                )}
               </div>
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="absolute bottom-0 right-0 p-2 bg-neutral-900 text-white rounded-full shadow-lg hover:bg-neutral-700 transition-colors"
+                className="absolute bottom-0 right-0 p-2 bg-[#0077FF] text-white rounded-full shadow-lg hover:bg-[#0066DD] transition-colors"
+                title="Set image"
               >
                 <Camera size={18} />
               </button>
+              {avatarUrl && (
+                <button
+                  onClick={() => setFormData({ ...formData, profile_pic: '' })}
+                  className="absolute bottom-0 left-0 p-2 bg-[#DC143C] text-white rounded-full shadow-lg hover:bg-[#B01030] transition-colors"
+                  title="Remove image"
+                >
+                  <Trash2 size={16} />
+                </button>
+              )}
               <input
                 ref={fileInputRef}
                 type="file"
@@ -130,7 +144,7 @@ export default function Profile() {
             </p>
             <button
               onClick={() => setShowPasswordForm(!showPasswordForm)}
-              className="btn-glow w-full bg-neutral-900 text-white py-2 rounded-xl text-sm font-bold hover:bg-neutral-800 transition-colors flex items-center justify-center gap-2"
+              className="btn-glow w-full bg-[#0077FF] text-white py-2 rounded-xl text-sm font-bold hover:bg-[#0066DD] transition-colors flex items-center justify-center gap-2"
             >
               <Lock size={14} /> {showPasswordForm ? 'Hide' : 'Change Password'}
             </button>
@@ -181,7 +195,7 @@ export default function Profile() {
 
               <div className="pt-4">
                 <button type="submit" disabled={loading}
-                  className="btn-glow bg-neutral-900 text-white px-8 py-3 rounded-xl font-bold hover:bg-neutral-800 transition-all flex items-center gap-2 disabled:opacity-50">
+                  className="btn-glow bg-[#0077FF] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#0066DD] transition-all flex items-center gap-2 disabled:opacity-50">
                   <Save size={20} /> {loading ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
@@ -239,7 +253,7 @@ export default function Profile() {
                   </div>
                 </div>
                 <button type="submit"
-                  className="btn-glow bg-neutral-900 text-white px-8 py-3 rounded-xl font-bold hover:bg-neutral-800 transition-all flex items-center gap-2">
+                  className="btn-glow bg-[#0077FF] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#0066DD] transition-all flex items-center gap-2">
                   <Save size={18} /> Update Password
                 </button>
               </form>

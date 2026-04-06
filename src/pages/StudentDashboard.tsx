@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../AuthContext';
-import { motion } from 'framer-motion';
-import { Book, Download, PlayCircle, TrendingUp } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Book, Download, PlayCircle, TrendingUp, Timer, Coffee, Play, Pause, RotateCcw, Zap } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Course } from '../types';
 
@@ -102,6 +102,9 @@ export default function StudentDashboard() {
         )}
       </section>
 
+      {/* Focus Mode */}
+      <FocusMode />
+
       {/* Downloads Section */}
       {courses.length > 0 && (
         <section className="bg-neutral-900 rounded-3xl p-8 text-white relative overflow-hidden">
@@ -128,5 +131,163 @@ export default function StudentDashboard() {
         </section>
       )}
     </div>
+  );
+}
+
+const FOCUS_DURATION = 30 * 60;
+const BREAK_DURATION = 5 * 60;
+
+function FocusMode() {
+  const { token } = useAuth();
+  const [mode, setMode] = useState<'idle' | 'focus' | 'break'>('idle');
+  const [secondsLeft, setSecondsLeft] = useState(FOCUS_DURATION);
+  const [paused, setPaused] = useState(false);
+  const [sessions, setSessions] = useState(0);
+  const [totalFocusToday, setTotalFocusToday] = useState(0);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const logSession = useCallback(async (type: 'focus' | 'break', duration: number) => {
+    try {
+      await fetch('/api/focus-sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ type, duration }),
+      });
+    } catch (e) { console.error(e); }
+  }, [token]);
+
+  useEffect(() => {
+    fetch('/api/focus-sessions/me', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(data => {
+        const focus = data.find((d: any) => d.type === 'focus');
+        if (focus) { setSessions(focus.count); setTotalFocusToday(focus.total_seconds); }
+      }).catch(() => {});
+  }, [token]);
+
+  const clearTimer = useCallback(() => {
+    if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
+  }, []);
+
+  useEffect(() => {
+    if (mode === 'idle' || paused) { clearTimer(); return; }
+    intervalRef.current = setInterval(() => {
+      setSecondsLeft(prev => {
+        if (prev <= 1) {
+          clearTimer();
+          if (mode === 'focus') {
+            setSessions(s => s + 1);
+            setTotalFocusToday(t => t + FOCUS_DURATION);
+            logSession('focus', FOCUS_DURATION);
+            setMode('break');
+            return BREAK_DURATION;
+          } else {
+            logSession('break', BREAK_DURATION);
+            setMode('idle');
+            return FOCUS_DURATION;
+          }
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return clearTimer;
+  }, [mode, paused, clearTimer, logSession]);
+
+  const startFocus = () => { setMode('focus'); setSecondsLeft(FOCUS_DURATION); setPaused(false); };
+  const startBreak = () => { setMode('break'); setSecondsLeft(BREAK_DURATION); setPaused(false); };
+  const reset = () => { clearTimer(); setMode('idle'); setSecondsLeft(FOCUS_DURATION); setPaused(false); };
+
+  const total = mode === 'focus' ? FOCUS_DURATION : mode === 'break' ? BREAK_DURATION : FOCUS_DURATION;
+  const progress = ((total - secondsLeft) / total) * 100;
+  const mins = Math.floor(secondsLeft / 60);
+  const secs = secondsLeft % 60;
+
+  const ringRadius = 54;
+  const circumference = 2 * Math.PI * ringRadius;
+  const strokeOffset = circumference - (progress / 100) * circumference;
+
+  return (
+    <section className="bg-white rounded-3xl p-8 shadow-sm border border-neutral-100 overflow-hidden relative">
+      <div className="flex flex-col md:flex-row items-center gap-8">
+        {/* Timer Ring */}
+        <div className="relative shrink-0">
+          <svg width="140" height="140" className="-rotate-90">
+            <circle cx="70" cy="70" r={ringRadius} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="8" />
+            <motion.circle
+              cx="70" cy="70" r={ringRadius} fill="none"
+              strokeWidth="8" strokeLinecap="round"
+              stroke={mode === 'break' ? '#22c55e' : '#0077FF'}
+              strokeDasharray={circumference}
+              animate={{ strokeDashoffset: strokeOffset }}
+              transition={{ duration: 0.4, ease: 'easeOut' }}
+            />
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="text-3xl font-black tabular-nums text-neutral-900">
+              {String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}
+            </span>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mt-1">
+              {mode === 'idle' ? 'Ready' : mode === 'focus' ? 'Focusing' : 'Break'}
+            </span>
+          </div>
+        </div>
+
+        {/* Info & Controls */}
+        <div className="flex-1 text-center md:text-left">
+          <h3 className="text-xl font-bold text-neutral-900 flex items-center justify-center md:justify-start gap-2 mb-2">
+            {mode === 'break' ? <Coffee size={22} className="text-green-500" /> : <Timer size={22} className="text-[#0077FF]" />}
+            {mode === 'idle' ? 'Focus Mode' : mode === 'focus' ? 'Stay Focused!' : 'Take a Break!'}
+          </h3>
+          <p className="text-neutral-500 text-sm mb-5">
+            {mode === 'idle' && 'Start a 30-minute focus session to boost your productivity.'}
+            {mode === 'focus' && 'Stay on task — a 5-minute break is waiting for you!'}
+            {mode === 'break' && 'Relax, stretch, grab a drink. You earned it!'}
+          </p>
+
+          <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
+            {mode === 'idle' ? (
+              <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }} onClick={startFocus}
+                className="bg-[#0077FF] text-white px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-[#0066DD] transition-colors shadow-sm">
+                <Play size={16} /> Start Focus
+              </motion.button>
+            ) : (
+              <>
+                <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }} onClick={() => setPaused(!paused)}
+                  className="bg-[#0077FF] text-white px-5 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-[#0066DD] transition-colors shadow-sm">
+                  {paused ? <Play size={16} /> : <Pause size={16} />} {paused ? 'Resume' : 'Pause'}
+                </motion.button>
+                {mode === 'focus' && (
+                  <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }} onClick={startBreak}
+                    className="bg-green-500/20 text-green-400 border border-green-500/30 px-5 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-green-500/30 transition-colors">
+                    <Coffee size={16} /> Skip to Break
+                  </motion.button>
+                )}
+                {mode === 'break' && (
+                  <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }} onClick={startFocus}
+                    className="bg-[#0077FF]/20 text-[#89CFF0] border border-[#0077FF]/30 px-5 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-[#0077FF]/30 transition-colors">
+                    <Zap size={16} /> New Focus
+                  </motion.button>
+                )}
+                <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }} onClick={reset}
+                  className="bg-white/10 text-neutral-400 px-4 py-2.5 rounded-xl text-sm flex items-center gap-2 hover:text-neutral-200 transition-colors">
+                  <RotateCcw size={14} /> Reset
+                </motion.button>
+              </>
+            )}
+          </div>
+
+          {sessions > 0 && (
+            <div className="mt-4 flex flex-wrap items-center justify-center md:justify-start gap-4 text-xs text-neutral-500">
+              <span className="flex items-center gap-1.5">
+                <Zap size={12} className="text-[#0077FF]" /> {sessions} session{sessions > 1 ? 's' : ''}
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Timer size={12} className="text-[#0077FF]" /> {Math.floor(totalFocusToday / 60)}m focused today
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
   );
 }

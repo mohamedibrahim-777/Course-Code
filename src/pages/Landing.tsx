@@ -27,19 +27,19 @@ export default function Landing() {
           </motion.span>
           <motion.h1 variants={fadeUp} className="text-5xl md:text-7xl font-black text-neutral-900 leading-tight mb-8">
             Master Programming <br />
-            <span className="bg-gradient-to-r from-neutral-900 via-neutral-600 to-neutral-900 bg-clip-text text-transparent">From Zero to Hero</span>
+            <span className="bg-gradient-to-r from-[#0077FF] via-[#89CFF0] to-white bg-clip-text text-transparent">From Zero to Hero</span>
           </motion.h1>
           <motion.p variants={fadeUp} className="text-xl text-neutral-500 mb-10 leading-relaxed max-w-2xl mx-auto">
             A structured, department-led platform designed to take you from beginner basics to advanced professional engineering.
           </motion.p>
           <motion.div variants={fadeUp} className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
-              <Link to="/register" className="btn-glow w-full sm:w-auto bg-neutral-900 text-white px-10 py-4 rounded-2xl font-bold text-lg flex items-center justify-center gap-2">
+              <Link to="/register" className="btn-glow w-full sm:w-auto bg-[#0077FF] text-white px-10 py-4 rounded-2xl font-bold text-lg flex items-center justify-center gap-2">
                 Get Started <ArrowRight size={20} />
               </Link>
             </motion.div>
             <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
-              <Link to="/login" className="btn-glow-white w-full sm:w-auto bg-white text-neutral-700 border border-neutral-200 px-10 py-4 rounded-2xl font-bold text-lg flex items-center justify-center">
+              <Link to="/login" className="w-full sm:w-auto bg-[rgba(137,207,240,0.12)] text-[#89CFF0] border border-[rgba(137,207,240,0.3)] px-10 py-4 rounded-2xl font-bold text-lg flex items-center justify-center backdrop-blur-sm hover:bg-[rgba(137,207,240,0.2)] transition-all">
                 Student Login
               </Link>
             </motion.div>
@@ -48,14 +48,14 @@ export default function Landing() {
 
         {/* Floating Elements */}
         <motion.div
-          animate={{ scale: [1, 1.2, 1], opacity: [0.08, 0.15, 0.08] }}
+          animate={{ scale: [1, 1.2, 1], opacity: [0.15, 0.3, 0.15] }}
           transition={{ repeat: Infinity, duration: 6, ease: 'easeInOut' }}
-          className="absolute -top-10 -left-10 w-40 h-40 bg-neutral-900 rounded-full blur-3xl"
+          className="absolute -top-10 -left-10 w-40 h-40 bg-[#0077FF] rounded-full blur-3xl"
         />
         <motion.div
-          animate={{ scale: [1, 1.3, 1], opacity: [0.06, 0.12, 0.06] }}
+          animate={{ scale: [1, 1.3, 1], opacity: [0.12, 0.25, 0.12] }}
           transition={{ repeat: Infinity, duration: 8, ease: 'easeInOut', delay: 1 }}
-          className="absolute top-40 -right-10 w-60 h-60 bg-neutral-600 rounded-full blur-3xl"
+          className="absolute top-40 -right-10 w-60 h-60 bg-[#89CFF0] rounded-full blur-3xl"
         />
       </section>
 

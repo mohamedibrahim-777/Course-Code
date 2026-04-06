@@ -30,9 +30,9 @@ export default function Navbar() {
           <motion.div
             whileHover={{ rotate: [0, -10, 10, 0] }}
             transition={{ duration: 0.5 }}
-            className="w-8 h-8 bg-neutral-900 rounded-lg flex items-center justify-center text-white font-bold"
+            className="w-8 h-8 bg-neutral-900 rounded-lg flex items-center justify-center text-white font-bold text-xs"
           >
-            C
+            CC
           </motion.div>
           <span className="font-bold text-xl tracking-tight text-neutral-900 group-hover:tracking-wide transition-all duration-300">Course Code</span>
         </Link>
@@ -48,7 +48,7 @@ export default function Navbar() {
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
                 onClick={handleLogout}
-                className="btn-glow-red bg-neutral-100 text-neutral-700 px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2"
+                className="bg-[#DC143C] text-white px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 hover:bg-[#B01030] transition-colors shadow-sm"
               >
                 <LogOut size={15} /> Logout
               </motion.button>
@@ -58,7 +58,7 @@ export default function Navbar() {
               <NavLink to="/" active={isActive('/')}>Home</NavLink>
               <NavLink to="/login" active={isActive('/login')}>Login</NavLink>
               <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
-                <Link to="/register" className="btn-glow bg-neutral-900 text-white px-5 py-2 rounded-xl text-sm font-medium">
+                <Link to="/register" className="btn-glow bg-[#0077FF] text-white px-5 py-2 rounded-xl text-sm font-medium">
                   Get Started
                 </Link>
               </motion.div>
@@ -95,7 +95,7 @@ export default function Navbar() {
                   <motion.button
                     whileTap={{ scale: 0.97 }}
                     onClick={handleLogout}
-                    className="btn-glow-red text-left text-neutral-700 bg-neutral-100 py-3 px-4 rounded-xl font-medium"
+                    className="text-left text-white bg-[#DC143C] py-3 px-4 rounded-xl font-medium hover:bg-[#B01030] transition-colors"
                   >
                     Logout
                   </motion.button>
@@ -103,7 +103,7 @@ export default function Navbar() {
               ) : (
                 <>
                   <MobileLink to="/login" onClick={() => setIsOpen(false)}>Login</MobileLink>
-                  <Link to="/register" onClick={() => setIsOpen(false)} className="btn-glow bg-neutral-900 text-white px-4 py-3 rounded-xl text-center font-medium">
+                  <Link to="/register" onClick={() => setIsOpen(false)} className="btn-glow bg-[#0077FF] text-white px-4 py-3 rounded-xl text-center font-medium">
                     Get Started
                   </Link>
                 </>
@@ -128,7 +128,7 @@ function NavLink({ to, active, children }: { to: string; active: boolean; childr
       {active && (
         <motion.div
           layoutId="nav-underline"
-          className="absolute -bottom-1 left-0 right-0 h-0.5 bg-neutral-900 rounded-full"
+          className="absolute -bottom-1 left-0 right-0 h-0.5 bg-[#ffffff] rounded-full"
           transition={{ type: 'spring', stiffness: 500, damping: 30 }}
         />
       )}

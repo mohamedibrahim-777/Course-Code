@@ -74,6 +74,27 @@ db.exec(`
     otp TEXT NOT NULL,
     expires_at DATETIME NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS comments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    lesson_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    parent_id INTEGER,
+    content TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(lesson_id) REFERENCES lessons(id),
+    FOREIGN KEY(user_id) REFERENCES users(id),
+    FOREIGN KEY(parent_id) REFERENCES comments(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS focus_sessions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    type TEXT NOT NULL,
+    duration INTEGER NOT NULL,
+    completed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id)
+  );
 `);
 
 // Seed Admin Accounts
@@ -313,6 +334,77 @@ async function startServer() {
       GROUP BY u.id
     `).all();
     res.json(staff);
+  });
+
+  // --- Comments / Doubts ---
+
+  app.get('/api/lessons/:id/comments', authenticate, (req, res) => {
+    const comments = db.prepare(`
+      SELECT c.id, c.lesson_id, c.user_id, c.parent_id, c.content, c.created_at,
+        u.name as user_name, u.role as user_role, u.profile_pic
+      FROM comments c
+      JOIN users u ON c.user_id = u.id
+      WHERE c.lesson_id = ?
+      ORDER BY c.created_at ASC
+    `).all(req.params.id);
+    res.json(comments);
+  });
+
+  app.post('/api/lessons/:id/comments', authenticate, (req: any, res) => {
+    const { content, parent_id } = req.body;
+    if (!content?.trim()) return res.status(400).json({ error: 'Content required' });
+    const result = db.prepare('INSERT INTO comments (lesson_id, user_id, parent_id, content) VALUES (?, ?, ?, ?)')
+      .run(req.params.id, req.user.id, parent_id || null, content.trim());
+    const comment = db.prepare(`
+      SELECT c.id, c.lesson_id, c.user_id, c.parent_id, c.content, c.created_at,
+        u.name as user_name, u.role as user_role, u.profile_pic
+      FROM comments c JOIN users u ON c.user_id = u.id WHERE c.id = ?
+    `).get(result.lastInsertRowid);
+    res.json(comment);
+  });
+
+  app.delete('/api/comments/:id', authenticate, (req: any, res) => {
+    const comment = db.prepare('SELECT * FROM comments WHERE id = ?').get(req.params.id) as any;
+    if (!comment) return res.status(404).json({ error: 'Not found' });
+    if (comment.user_id !== req.user.id && req.user.role === 'student') return res.status(403).json({ error: 'Forbidden' });
+    db.prepare('DELETE FROM comments WHERE parent_id = ?').run(req.params.id);
+    db.prepare('DELETE FROM comments WHERE id = ?').run(req.params.id);
+    res.json({ success: true });
+  });
+
+  // --- Focus Sessions ---
+
+  app.post('/api/focus-sessions', authenticate, (req: any, res) => {
+    const { type, duration } = req.body;
+    if (!['focus', 'break'].includes(type) || !duration) return res.status(400).json({ error: 'Invalid data' });
+    db.prepare('INSERT INTO focus_sessions (user_id, type, duration) VALUES (?, ?, ?)').run(req.user.id, type, duration);
+    res.json({ success: true });
+  });
+
+  app.get('/api/focus-sessions/me', authenticate, (req: any, res) => {
+    const today = new Date().toISOString().split('T')[0];
+    const sessions = db.prepare(
+      "SELECT type, SUM(duration) as total_seconds, COUNT(*) as count FROM focus_sessions WHERE user_id = ? AND date(completed_at) = ? GROUP BY type"
+    ).all(req.user.id, today);
+    res.json(sessions);
+  });
+
+  app.get('/api/analytics/focus', authenticate, (req: any, res) => {
+    if (req.user.role === 'student') return res.status(403).json({ error: 'Forbidden' });
+    const data = db.prepare(`
+      SELECT u.id, u.name, u.email,
+        COALESCE(SUM(CASE WHEN fs.type = 'focus' THEN fs.duration ELSE 0 END), 0) as total_focus_seconds,
+        COALESCE(SUM(CASE WHEN fs.type = 'break' THEN fs.duration ELSE 0 END), 0) as total_break_seconds,
+        COALESCE(SUM(CASE WHEN fs.type = 'focus' THEN 1 ELSE 0 END), 0) as focus_count,
+        COALESCE(SUM(CASE WHEN fs.type = 'break' THEN 1 ELSE 0 END), 0) as break_count,
+        MAX(fs.completed_at) as last_session
+      FROM users u
+      LEFT JOIN focus_sessions fs ON u.id = fs.user_id
+      WHERE u.role = 'student'
+      GROUP BY u.id
+      ORDER BY total_focus_seconds DESC
+    `).all();
+    res.json(data);
   });
 
   // --- Profile ---

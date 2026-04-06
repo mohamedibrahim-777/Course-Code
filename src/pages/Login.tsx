@@ -91,7 +91,7 @@ export default function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="btn-glow w-full bg-neutral-900 text-white py-3 rounded-xl font-bold hover:bg-neutral-800 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+            className="btn-glow w-full bg-[#0077FF] text-white py-3 rounded-xl font-bold hover:bg-[#0066DD] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {loading ? 'Signing in...' : 'Sign In'} <ArrowRight size={18} />
           </button>
