@@ -5,8 +5,9 @@
 
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './AuthContext';
+import { ThemeProvider, useTheme } from './ThemeContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 // Pages
 import Login from './pages/Login';
@@ -21,27 +22,16 @@ import Landing from './pages/Landing';
 // Components
 import Navbar from './components/Navbar';
 import LoadingScreen from './components/LoadingScreen';
+import PageLoader from './components/PageLoader';
 import AnimatedBackground from './components/AnimatedBackground';
-
-const pageVariants = {
-  initial: { opacity: 0, y: 6 },
-  in: { opacity: 1, y: 0 },
-  out: { opacity: 0, y: -4 },
-};
-
-const pageTransition = {
-  type: 'tween',
-  ease: [0.4, 0, 0.2, 1],
-  duration: 0.12,
-};
 
 const PageWrapper = ({ children }: { children: React.ReactNode }) => (
   <motion.div
-    initial="initial"
-    animate="in"
-    exit="out"
-    variants={pageVariants}
-    transition={pageTransition}
+    initial={{ opacity: 0, y: 12 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0 }}
+    transition={{ type: 'tween', ease: [0.25, 0.1, 0.25, 1], duration: 0.3 }}
+    style={{ willChange: 'opacity, transform' }}
   >
     {children}
   </motion.div>
@@ -49,23 +39,39 @@ const PageWrapper = ({ children }: { children: React.ReactNode }) => (
 
 const AppContent = () => {
   const { user, loading: authLoading } = useAuth();
-  const [pageLoading, setPageLoading] = useState(true);
+  const { theme } = useTheme();
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [pageLoading, setPageLoading] = useState(false);
   const location = useLocation();
+  const isFirstLoad = useRef(true);
 
+  // Initial app load
   useEffect(() => {
-    const timer = setTimeout(() => setPageLoading(false), 1000);
+    const timer = setTimeout(() => setInitialLoading(false), 500);
     return () => clearTimeout(timer);
   }, []);
 
-  if (authLoading || pageLoading) {
+  // Show page loader on every route change (except first load)
+  useEffect(() => {
+    if (isFirstLoad.current) {
+      isFirstLoad.current = false;
+      return;
+    }
+    setPageLoading(true);
+    const timer = setTimeout(() => setPageLoading(false), 300);
+    return () => clearTimeout(timer);
+  }, [location.pathname]);
+
+  if (authLoading || initialLoading) {
     return <LoadingScreen />;
   }
 
   return (
-    <div className="dark-bg min-h-screen font-sans flex flex-col relative z-10">
+    <div className={`${theme === 'dark' ? 'dark-bg' : 'light-bg'} min-h-screen font-sans flex flex-col relative`}>
       <Navbar />
+      <AnimatePresence>{pageLoading && <PageLoader />}</AnimatePresence>
       <main className="container mx-auto px-4 py-8 flex-1">
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="popLayout">
           <Routes location={location} key={location.pathname}>
             <Route path="/" element={<PageWrapper><Landing /></PageWrapper>} />
             <Route path="/login" element={!user ? <PageWrapper><Login /></PageWrapper> : <Navigate to="/dashboard" />} />
@@ -89,27 +95,38 @@ const AppContent = () => {
   );
 };
 
-const Footer = () => (
-  <motion.footer
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    transition={{ delay: 0.5, duration: 0.6 }}
-    className="bg-[#0a0a1a]/50 backdrop-blur-2xl border-t border-white/8 py-8 mt-auto"
-  >
-    <div className="container mx-auto px-4 text-center text-neutral-400 text-sm">
-      <p>&copy; 2026 Course Code. All rights reserved.</p>
-      <p className="mt-2 italic text-neutral-500">Empowering the next generation of developers.</p>
-    </div>
-  </motion.footer>
-);
+const Footer = () => {
+  const { theme } = useTheme();
+  return (
+    <motion.footer
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ delay: 0.5, duration: 0.6 }}
+      className={`backdrop-blur-2xl border-t py-8 mt-auto ${
+        theme === 'dark'
+          ? 'bg-[#0a0a1a]/50 border-white/8'
+          : 'bg-white/60 border-neutral-200'
+      }`}
+    >
+      <div className={`container mx-auto px-4 text-center text-sm ${
+        theme === 'dark' ? 'text-neutral-400' : 'text-neutral-500'
+      }`}>
+        <p>&copy; 2026 Course Code. All rights reserved.</p>
+        <p className={`mt-2 italic ${theme === 'dark' ? 'text-neutral-500' : 'text-neutral-400'}`}>Empowering the next generation of developers.</p>
+      </div>
+    </motion.footer>
+  );
+};
 
 export default function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <AnimatedBackground />
-        <AppContent />
-      </Router>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <Router>
+          <AnimatedBackground />
+          <AppContent />
+        </Router>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

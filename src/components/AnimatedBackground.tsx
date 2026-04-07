@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { useTheme } from '../ThemeContext';
 
 interface Particle {
   x: number;
@@ -12,6 +13,7 @@ interface Particle {
 
 export default function AnimatedBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const { theme } = useTheme();
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -49,13 +51,23 @@ export default function AnimatedBackground() {
       radius: number; color: number[]; color2: number[];
     }
 
-    const blobs: Blob[] = [
-      { x: canvas.width * 0.3, y: canvas.height * 0.3, vx: 0.4, vy: 0.3, radius: 180, color: [0, 119, 255, 0.2], color2: [0, 80, 200, 0.06] },
-      { x: canvas.width * 0.7, y: canvas.height * 0.5, vx: -0.3, vy: 0.35, radius: 160, color: [137, 207, 240, 0.18], color2: [100, 170, 220, 0.05] },
-      { x: canvas.width * 0.5, y: canvas.height * 0.7, vx: 0.35, vy: -0.25, radius: 140, color: [220, 20, 60, 0.12], color2: [180, 15, 50, 0.04] },
-      { x: canvas.width * 0.2, y: canvas.height * 0.8, vx: -0.25, vy: -0.3, radius: 120, color: [0, 80, 180, 0.15], color2: [0, 50, 150, 0.04] },
-      { x: canvas.width * 0.8, y: canvas.height * 0.2, vx: 0.2, vy: 0.4, radius: 150, color: [60, 160, 255, 0.14], color2: [40, 120, 220, 0.04] },
-    ];
+    const isDark = theme === 'dark';
+
+    const blobs: Blob[] = isDark
+      ? [
+          { x: canvas.width * 0.3, y: canvas.height * 0.3, vx: 0.4, vy: 0.3, radius: 180, color: [0, 119, 255, 0.2], color2: [0, 80, 200, 0.06] },
+          { x: canvas.width * 0.7, y: canvas.height * 0.5, vx: -0.3, vy: 0.35, radius: 160, color: [137, 207, 240, 0.18], color2: [100, 170, 220, 0.05] },
+          { x: canvas.width * 0.5, y: canvas.height * 0.7, vx: 0.35, vy: -0.25, radius: 140, color: [220, 20, 60, 0.12], color2: [180, 15, 50, 0.04] },
+          { x: canvas.width * 0.2, y: canvas.height * 0.8, vx: -0.25, vy: -0.3, radius: 120, color: [0, 80, 180, 0.15], color2: [0, 50, 150, 0.04] },
+          { x: canvas.width * 0.8, y: canvas.height * 0.2, vx: 0.2, vy: 0.4, radius: 150, color: [60, 160, 255, 0.14], color2: [40, 120, 220, 0.04] },
+        ]
+      : [
+          { x: canvas.width * 0.3, y: canvas.height * 0.3, vx: 0.4, vy: 0.3, radius: 220, color: [0, 119, 255, 0.18], color2: [0, 80, 200, 0.06] },
+          { x: canvas.width * 0.7, y: canvas.height * 0.5, vx: -0.3, vy: 0.35, radius: 200, color: [137, 207, 240, 0.16], color2: [100, 170, 220, 0.05] },
+          { x: canvas.width * 0.5, y: canvas.height * 0.7, vx: 0.35, vy: -0.25, radius: 180, color: [180, 140, 255, 0.14], color2: [140, 100, 220, 0.04] },
+          { x: canvas.width * 0.2, y: canvas.height * 0.8, vx: -0.25, vy: -0.3, radius: 160, color: [0, 80, 180, 0.14], color2: [0, 50, 150, 0.04] },
+          { x: canvas.width * 0.8, y: canvas.height * 0.2, vx: 0.2, vy: 0.4, radius: 190, color: [60, 160, 255, 0.15], color2: [40, 120, 220, 0.05] },
+        ];
 
     const drawBlobs = () => {
       const w = canvas.width;
@@ -89,11 +101,15 @@ export default function AnimatedBackground() {
         const alpha = p.opacity * (0.7 + 0.3 * Math.sin(p.pulse));
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size * 3, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.1})`;
+        ctx.fillStyle = isDark
+          ? `rgba(255, 255, 255, ${alpha * 0.1})`
+          : `rgba(0, 80, 200, ${alpha * 0.12})`;
         ctx.fill();
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+        ctx.fillStyle = isDark
+          ? `rgba(255, 255, 255, ${alpha})`
+          : `rgba(0, 100, 220, ${alpha * 0.6})`;
         ctx.fill();
       });
     };
@@ -106,7 +122,7 @@ export default function AnimatedBackground() {
       const cellW = w / cols;
       const cellH = h / rows;
 
-      ctx.lineWidth = 0.5;
+      ctx.lineWidth = isDark ? 0.5 : 0.8;
 
       for (let row = 0; row < rows; row++) {
         for (let col = 0; col < cols; col++) {
@@ -121,11 +137,13 @@ export default function AnimatedBackground() {
 
           const dist = Math.sqrt((px - w / 2) ** 2 + (py - h / 2) ** 2);
           const maxDist = Math.sqrt((w / 2) ** 2 + (h / 2) ** 2);
-          const alpha = 0.06 + 0.06 * (1 - dist / maxDist);
+          const alpha = isDark
+            ? 0.06 + 0.06 * (1 - dist / maxDist)
+            : 0.1 + 0.1 * (1 - dist / maxDist);
 
           const hue = (col * 4 + row * 6 + time * 0.1) % 360;
-          const sat = 70;
-          const lum = 55;
+          const sat = isDark ? 70 : 70;
+          const lum = isDark ? 55 : 45;
 
           // Horizontal line
           if (col < cols - 1) {
@@ -151,8 +169,8 @@ export default function AnimatedBackground() {
 
           // Node dot
           ctx.beginPath();
-          ctx.arc(px, py, 1.2, 0, Math.PI * 2);
-          ctx.fillStyle = `hsla(${hue}, ${sat}%, ${lum}%, ${alpha + 0.05})`;
+          ctx.arc(px, py, isDark ? 1.2 : 1.6, 0, Math.PI * 2);
+          ctx.fillStyle = `hsla(${hue}, ${sat}%, ${lum}%, ${alpha + (isDark ? 0.05 : 0.08)})`;
           ctx.fill();
         }
       }
@@ -160,7 +178,7 @@ export default function AnimatedBackground() {
 
     const animate = () => {
       time++;
-      ctx.fillStyle = '#060611';
+      ctx.fillStyle = isDark ? '#060611' : '#f8fafc';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       drawBlobs();
       drawMesh();
@@ -175,7 +193,7 @@ export default function AnimatedBackground() {
     const handleResize = () => { resize(); createParticles(); };
     window.addEventListener('resize', handleResize);
     return () => { cancelAnimationFrame(animationId); window.removeEventListener('resize', handleResize); };
-  }, []);
+  }, [theme]);
 
   return <canvas ref={canvasRef} className="fixed inset-0 z-0" style={{ pointerEvents: 'none' }} />;
 }

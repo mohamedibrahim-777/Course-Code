@@ -12,237 +12,254 @@ body {
   font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background: #f8fafc;
+  transition: background 0.3s ease;
+}
+
+body[data-theme="dark"] {
   background: #060611;
 }
 
-/* Smooth scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-}
+/* Smooth scrollbar — light */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: #f1f5f9; }
+::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.12); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.25); }
 
-::-webkit-scrollbar-track {
-  background: #0a0a1a;
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25);
-}
+/* Smooth scrollbar — dark */
+body[data-theme="dark"]::-webkit-scrollbar-track { background: #0a0a1a; }
+body[data-theme="dark"]::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); }
+body[data-theme="dark"]::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.25); }
 
 /* ── Glow buttons ── */
 .btn-glow {
   position: relative;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
   box-shadow: 0 0 0px rgba(0, 0, 0, 0);
 }
-
 .btn-glow:hover {
-  box-shadow:
-    0 0 15px rgba(0, 0, 0, 0.3),
-    0 0 40px rgba(0, 0, 0, 0.15),
-    0 0 80px rgba(0, 0, 0, 0.05);
-  transform: translateY(-1px);
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.3), 0 0 40px rgba(0, 0, 0, 0.15), 0 0 80px rgba(0, 0, 0, 0.05);
+  transform: translateY(-2px);
 }
-
 .btn-glow:active {
   transform: translateY(0px);
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
 }
 
-/* Red glow for logout / danger */
 .btn-glow-red {
   position: relative;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
   box-shadow: 0 0 0px rgba(220, 38, 38, 0);
 }
-
 .btn-glow-red:hover {
   background-color: #dc2626 !important;
   color: #fff !important;
-  box-shadow:
-    0 0 15px rgba(220, 38, 38, 0.4),
-    0 0 40px rgba(220, 38, 38, 0.2),
-    0 0 80px rgba(220, 38, 38, 0.08);
-  transform: translateY(-1px);
+  box-shadow: 0 0 15px rgba(220, 38, 38, 0.4), 0 0 40px rgba(220, 38, 38, 0.2), 0 0 80px rgba(220, 38, 38, 0.08);
+  transform: translateY(-2px);
 }
+.btn-glow-red:active { transform: translateY(0px); box-shadow: 0 0 10px rgba(220, 38, 38, 0.3); }
 
-.btn-glow-red:active {
-  transform: translateY(0px);
-  box-shadow: 0 0 10px rgba(220, 38, 38, 0.3);
-}
-
-/* White glow for secondary buttons */
 .btn-glow-white {
   position: relative;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
 }
-
 .btn-glow-white:hover {
-  box-shadow:
-    0 0 12px rgba(0, 0, 0, 0.08),
-    0 0 30px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.08), 0 0 30px rgba(0, 0, 0, 0.04);
   transform: translateY(-1px);
 }
 
 /* Inputs - visible cursor */
-input,
-textarea,
-select {
-  caret-color: #171717;
-  cursor: text;
-}
-
-input:focus,
-textarea:focus {
-  caret-color: #171717;
-}
+input, textarea, select { caret-color: #171717; cursor: text; }
+input:focus, textarea:focus { caret-color: #171717; }
 
 /* Card hover lift */
-.card-hover {
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
+.card-hover { transition: all 0.5s cubic-bezier(0.25, 0.1, 0.25, 1); }
 .card-hover:hover {
   transform: translateY(-4px);
-  box-shadow:
-    0 20px 40px rgba(0, 0, 0, 0.08),
-    0 8px 16px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08), 0 8px 16px rgba(0, 0, 0, 0.04);
 }
 
 /* ── Universal button glow ── */
-button,
-[type="submit"],
-a[class*="rounded"] {
-  transition: box-shadow 0.35s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s ease, background 0.3s ease;
+button, [type="submit"], a[class*="rounded"] {
+  transition: box-shadow 0.4s cubic-bezier(0.25, 0.1, 0.25, 1), transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1), background 0.35s ease, color 0.3s ease;
 }
-
-/* Subtle glow on hover */
-button:hover,
-[type="submit"]:hover,
-a[class*="rounded"]:hover {
-  box-shadow:
-    0 0 10px rgba(0, 119, 255, 0.25),
-    0 0 25px rgba(0, 119, 255, 0.1);
+button:hover, [type="submit"]:hover, a[class*="rounded"]:hover {
+  box-shadow: 0 0 10px rgba(0, 119, 255, 0.25), 0 0 25px rgba(0, 119, 255, 0.1);
 }
-
-/* Bright pulse on press / touch */
-button:active,
-[type="submit"]:active,
-a[class*="rounded"]:active {
-  box-shadow:
-    0 0 16px rgba(0, 119, 255, 0.6),
-    0 0 40px rgba(0, 119, 255, 0.25),
-    0 0 80px rgba(0, 119, 255, 0.1);
+button:active, [type="submit"]:active, a[class*="rounded"]:active {
+  box-shadow: 0 0 16px rgba(0, 119, 255, 0.6), 0 0 40px rgba(0, 119, 255, 0.25), 0 0 80px rgba(0, 119, 255, 0.1);
   transform: scale(0.97);
 }
-
-/* Crimson glow for danger / logout buttons */
-button[class*="DC143C"]:hover,
-button[class*="DC143C"]:active {
-  box-shadow:
-    0 0 14px rgba(220, 20, 60, 0.5),
-    0 0 35px rgba(220, 20, 60, 0.2),
-    0 0 70px rgba(220, 20, 60, 0.08) !important;
+button[class*="DC143C"]:hover, button[class*="DC143C"]:active {
+  box-shadow: 0 0 14px rgba(220, 20, 60, 0.5), 0 0 35px rgba(220, 20, 60, 0.2), 0 0 70px rgba(220, 20, 60, 0.08) !important;
+}
+button[class*="green"]:hover, button[class*="green"]:active {
+  box-shadow: 0 0 12px rgba(34, 197, 94, 0.4), 0 0 30px rgba(34, 197, 94, 0.15) !important;
 }
 
-/* Green glow for success / break buttons */
-button[class*="green"]:hover,
-button[class*="green"]:active {
-  box-shadow:
-    0 0 12px rgba(34, 197, 94, 0.4),
-    0 0 30px rgba(34, 197, 94, 0.15) !important;
+
+/* ══════════════════════════════════════════════
+   GLASS THEME — applied via CSS variables
+   ══════════════════════════════════════════════ */
+
+/* ── Light theme variables ── */
+.light-bg {
+  --glass-bg: rgba(255, 255, 255, 0.97);
+  --glass-bg-subtle: #f5f7fa;
+  --glass-border: rgba(0, 0, 0, 0.06);
+  --glass-border-subtle: rgba(0, 0, 0, 0.04);
+  --glass-input-bg: #f8f9fb;
+  --glass-input-border: rgba(0, 0, 0, 0.1);
+  --glass-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.04);
+  --glass-shadow-lg: 0 2px 8px rgba(0, 0, 0, 0.08), 0 8px 28px rgba(0, 0, 0, 0.06);
+  --text-placeholder: rgba(0, 0, 0, 0.4);
+  color: #171717;
 }
+
+/* ── Dark theme variables ── */
+.dark-bg {
+  --glass-bg: rgba(12, 12, 30, 0.97);
+  --glass-bg-subtle: rgba(15, 15, 38, 0.97);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-border-subtle: rgba(255, 255, 255, 0.05);
+  --glass-input-bg: rgba(18, 18, 42, 0.97);
+  --glass-input-border: rgba(255, 255, 255, 0.1);
+  --glass-shadow: 0 1px 3px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(0, 0, 0, 0.3);
+  --glass-shadow-lg: 0 2px 8px rgba(0, 0, 0, 0.5), 0 8px 28px rgba(0, 0, 0, 0.35);
+  --text-placeholder: rgba(255, 255, 255, 0.3);
+  color: #f0f0f5;
+}
+
+
+/* ══════════════════════════════════
+   Light Background — Glass Theme
+   ══════════════════════════════════ */
+
+.light-bg .bg-white,
+.light-bg .bg-white\/80,
+.light-bg .bg-white\/95 {
+  background: rgba(255, 255, 255, 0.97) !important;
+  border-color: var(--glass-border) !important;
+  box-shadow: var(--glass-shadow) !important;
+}
+
+.light-bg .bg-neutral-50 {
+  background: #f5f7fa !important;
+  border-color: var(--glass-border-subtle) !important;
+}
+
+.light-bg .bg-neutral-100 {
+  background: #eff1f5 !important;
+}
+
+.light-bg .bg-neutral-200 {
+  background: #e5e8ed !important;
+}
+
+.light-bg input,
+.light-bg textarea,
+.light-bg select {
+  background: var(--glass-input-bg) !important;
+  border-color: var(--glass-input-border) !important;
+}
+.light-bg input:focus,
+.light-bg textarea:focus,
+.light-bg select:focus {
+  border-color: rgba(0, 119, 255, 0.4) !important;
+  box-shadow: 0 0 0 2px rgba(0, 119, 255, 0.15) !important;
+}
+.light-bg input::placeholder,
+.light-bg textarea::placeholder {
+  color: var(--text-placeholder) !important;
+}
+
+.light-bg .shadow-sm  { box-shadow: var(--glass-shadow) !important; }
+.light-bg .shadow-lg  { box-shadow: var(--glass-shadow-lg) !important; }
+.light-bg .shadow-xl  { box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 8px 28px rgba(0, 0, 0, 0.06) !important; }
+.light-bg .shadow-2xl { box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1), 0 12px 40px rgba(0, 0, 0, 0.08) !important; }
+
+.light-bg .border-neutral-100 { border-color: var(--glass-border) !important; }
+.light-bg .border-neutral-200 { border-color: var(--glass-border-subtle) !important; }
+
+.light-bg .hover\:bg-neutral-50:hover  { background: #f0f2f5 !important; }
+.light-bg .hover\:bg-neutral-100:hover { background: #eaecf0 !important; }
+
+.light-bg .card-hover:hover {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 20px 40px rgba(0, 0, 0, 0.06) !important;
+}
+
 
 /* ══════════════════════════════════
    Dark Background — Glass Theme
    ══════════════════════════════════ */
 
-.dark-bg {
-  color: #f0f0f5;
-}
-
-/* ── Glass panels ── */
-.dark-bg .bg-white {
-  background: rgba(255, 255, 255, 0.06) !important;
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-}
-
-.dark-bg .bg-white\/80 {
-  background: rgba(12, 12, 35, 0.65) !important;
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-}
-
+.dark-bg .bg-white,
+.dark-bg .bg-white\/80,
 .dark-bg .bg-white\/95 {
-  background: rgba(12, 12, 35, 0.88) !important;
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+  background: rgba(12, 12, 30, 0.97) !important;
+  border-color: var(--glass-border) !important;
+  box-shadow: var(--glass-shadow) !important;
 }
 
-/* ── Subtle fills ── */
 .dark-bg .bg-neutral-50 {
-  background: rgba(255, 255, 255, 0.05) !important;
+  background: rgba(15, 15, 38, 0.97) !important;
+  border-color: var(--glass-border-subtle) !important;
 }
 
 .dark-bg .bg-neutral-100 {
-  background: rgba(255, 255, 255, 0.08) !important;
+  background: rgba(18, 18, 42, 0.97) !important;
 }
 
 .dark-bg .bg-neutral-200 {
-  background: rgba(255, 255, 255, 0.1) !important;
+  background: rgba(22, 22, 48, 0.97) !important;
 }
 
-/* ── Text: dark → light ── */
+.dark-bg .bg-neutral-900 {
+  background: rgba(8, 8, 22, 0.97) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.dark-bg .bg-neutral-800 {
+  background: rgba(12, 12, 30, 0.97) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
 .dark-bg .text-neutral-900 { color: #f0f0f5 !important; }
 .dark-bg .text-neutral-800 { color: #e0e0e8 !important; }
 .dark-bg .text-neutral-700 { color: #c8c8d4 !important; }
 .dark-bg .text-neutral-600 { color: #9898a8 !important; }
 
-/* ── Borders ── */
 .dark-bg .border-neutral-50  { border-color: rgba(255, 255, 255, 0.04) !important; }
-.dark-bg .border-neutral-100 { border-color: rgba(255, 255, 255, 0.06) !important; }
+.dark-bg .border-neutral-100 { border-color: rgba(255, 255, 255, 0.08) !important; }
 .dark-bg .border-neutral-200 { border-color: rgba(255, 255, 255, 0.1) !important; }
 .dark-bg .border-neutral-200\/60 { border-color: rgba(255, 255, 255, 0.06) !important; }
 .dark-bg .border-neutral-700 { border-color: rgba(255, 255, 255, 0.12) !important; }
 .dark-bg .divide-neutral-50 > * + * { border-color: rgba(255, 255, 255, 0.04) !important; }
 
-/* ── Shadows → glass glow ── */
-.dark-bg .shadow-sm  { box-shadow: 0 0 15px rgba(0, 119, 255, 0.05), 0 2px 8px rgba(0,0,0,0.3) !important; }
-.dark-bg .shadow-lg  { box-shadow: 0 0 25px rgba(0, 119, 255, 0.08), 0 4px 16px rgba(0,0,0,0.35) !important; }
-.dark-bg .shadow-xl  { box-shadow: 0 0 30px rgba(0, 119, 255, 0.1), 0 8px 24px rgba(0,0,0,0.4) !important; }
-.dark-bg .shadow-2xl { box-shadow: 0 0 40px rgba(0, 119, 255, 0.12), 0 12px 36px rgba(0,0,0,0.5) !important; }
+.dark-bg .shadow-sm  { box-shadow: var(--glass-shadow) !important; }
+.dark-bg .shadow-lg  { box-shadow: var(--glass-shadow-lg) !important; }
+.dark-bg .shadow-xl  { box-shadow: 0 0 30px rgba(0, 119, 255, 0.1), 0 8px 24px rgba(0, 0, 0, 0.4) !important; }
+.dark-bg .shadow-2xl { box-shadow: 0 0 40px rgba(0, 119, 255, 0.12), 0 12px 36px rgba(0, 0, 0, 0.5) !important; }
 
-/* ── Inputs ── */
 .dark-bg input,
 .dark-bg textarea,
 .dark-bg select {
   color: #f0f0f5 !important;
   caret-color: #e0e0e8 !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
 }
 .dark-bg input::placeholder,
-.dark-bg textarea::placeholder {
-  color: rgba(255, 255, 255, 0.3) !important;
-}
-.dark-bg input:disabled {
-  color: rgba(255, 255, 255, 0.4) !important;
-}
-.dark-bg select option {
-  background: #0f0f28;
-  color: #f0f0f5;
-}
+.dark-bg textarea::placeholder { color: var(--text-placeholder) !important; }
+.dark-bg input:disabled { color: rgba(255, 255, 255, 0.4) !important; }
+.dark-bg select option { background: #0f0f28; color: #f0f0f5; }
 .dark-bg input:focus,
 .dark-bg textarea:focus,
 .dark-bg select:focus {
-  border-color: rgba(0, 100, 220, 0.4) !important;
-  box-shadow: 0 0 0 2px rgba(0, 100, 220, 0.2) !important;
+  border-color: rgba(0, 119, 255, 0.4) !important;
+  box-shadow: 0 0 0 2px rgba(0, 119, 255, 0.2) !important;
 }
 
-/* ── Colored feedback (dark-safe) ── */
 .dark-bg .bg-red-50    { background: rgba(239, 68, 68, 0.1) !important; }
 .dark-bg .bg-green-50  { background: rgba(34, 197, 94, 0.1) !important; }
 .dark-bg .bg-green-100 { background: rgba(34, 197, 94, 0.15) !important; }
@@ -257,7 +274,6 @@ button[class*="green"]:active {
 .dark-bg .border-amber-200 { border-color: rgba(245, 158, 11, 0.2) !important; }
 .dark-bg .border-green-200 { border-color: rgba(34, 197, 94, 0.2) !important; }
 
-/* ── Hover states ── */
 .dark-bg .hover\:bg-neutral-50:hover  { background: rgba(255, 255, 255, 0.08) !important; }
 .dark-bg .hover\:bg-neutral-100:hover { background: rgba(255, 255, 255, 0.1) !important; }
 .dark-bg .hover\:bg-neutral-200:hover { background: rgba(255, 255, 255, 0.12) !important; }
@@ -266,9 +282,57 @@ button[class*="green"]:active {
 .dark-bg .hover\:text-neutral-700:hover { color: #c8c8d4 !important; }
 .dark-bg .hover\:text-neutral-600:hover { color: #9898a8 !important; }
 .dark-bg .hover\:border-neutral-900:hover { border-color: rgba(255, 255, 255, 0.3) !important; }
-.dark-bg .hover\:shadow-lg:hover { box-shadow: 0 0 25px rgba(0, 119, 255, 0.12), 0 4px 16px rgba(0,0,0,0.35) !important; }
+.dark-bg .hover\:shadow-lg:hover { box-shadow: 0 0 25px rgba(0, 119, 255, 0.12), 0 4px 16px rgba(0, 0, 0, 0.35) !important; }
 
-/* ── Glass card hover ── */
 .dark-bg .card-hover:hover {
-  box-shadow: 0 0 30px rgba(0, 119, 255, 0.08), 0 20px 40px rgba(0,0,0,0.3) !important;
+  box-shadow: 0 0 30px rgba(0, 119, 255, 0.08), 0 20px 40px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* ── Icons visible in both themes ── */
+.dark-bg .text-neutral-900 svg,
+.dark-bg .text-neutral-800 svg,
+.dark-bg .text-neutral-700 svg,
+.dark-bg .text-neutral-600 svg,
+.dark-bg svg.text-neutral-900,
+.dark-bg svg.text-neutral-800,
+.dark-bg svg.text-neutral-700,
+.dark-bg svg.text-neutral-600 {
+  color: #e0e0e8 !important;
+  stroke: #e0e0e8 !important;
+}
+
+.dark-bg .text-neutral-400 svg,
+.dark-bg svg.text-neutral-400,
+.dark-bg .text-neutral-400 {
+  color: #b0b0c8 !important;
+}
+
+.dark-bg .text-neutral-500 {
+  color: #9898b0 !important;
+}
+
+/* ── Input icons must be bright in dark theme ── */
+.dark-bg .relative > svg.text-neutral-400,
+.dark-bg .relative > .text-neutral-400[class*="lucide"] {
+  color: #c0c0d8 !important;
+}
+
+.light-bg .text-neutral-900 svg,
+.light-bg svg.text-neutral-900 {
+  color: #171717 !important;
+  stroke: #171717 !important;
+}
+
+.light-bg .text-neutral-600 svg,
+.light-bg svg.text-neutral-600,
+.light-bg .text-neutral-500 svg,
+.light-bg svg.text-neutral-500 {
+  color: #525252 !important;
+  stroke: #525252 !important;
+}
+
+.light-bg .text-neutral-400 svg,
+.light-bg svg.text-neutral-400 {
+  color: #737373 !important;
+  stroke: #737373 !important;
 }

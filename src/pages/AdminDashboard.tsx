@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../AuthContext';
+import { useTheme } from '../ThemeContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Users, BookOpen, BarChart3, Trash2, Edit, X, FileText, Save, ChevronDown, ChevronUp, Upload, Timer, Coffee, Zap, MessageCircle, Send, Reply } from 'lucide-react';
 import { Course, Lesson } from '../types';
@@ -143,7 +144,7 @@ export default function AdminDashboard() {
         </div>
         <button
           onClick={() => setShowAddCourse(true)}
-          className="btn-glow bg-neutral-900 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-neutral-800 transition-all"
+          className="btn-glow bg-[#0077FF]/80 backdrop-blur-xl text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-[#0077FF] transition-all shadow-lg shadow-blue-500/20 border border-blue-400/20"
         >
           <Plus size={20} /> Create New Course
         </button>
@@ -564,16 +565,38 @@ export default function AdminDashboard() {
 }
 
 function Modal({ show, onClose, title, children }: { show: boolean; onClose: () => void; title: string; children: React.ReactNode }) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   if (!show) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div
+        className="absolute inset-0"
+        style={{
+          background: isDark ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.3)',
+          backdropFilter: 'blur(24px)',
+          WebkitBackdropFilter: 'blur(24px)',
+        }}
+      />
       <motion.div
-        initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-        className="bg-white w-full max-w-md p-8 rounded-3xl shadow-2xl" onClick={e => e.stopPropagation()}
+        initial={{ scale: 0.92, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+        className="relative z-10 w-full max-w-md p-8 rounded-3xl"
+        style={{
+          background: isDark ? 'rgba(20, 20, 50, 0.55)' : 'rgba(255, 255, 255, 0.45)',
+          backdropFilter: 'blur(40px) saturate(1.2)',
+          WebkitBackdropFilter: 'blur(40px) saturate(1.2)',
+          border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(255, 255, 255, 0.6)',
+          boxShadow: isDark
+            ? '0 8px 32px rgba(0, 0, 0, 0.4)'
+            : '0 8px 32px rgba(0, 0, 0, 0.08)',
+        }}
+        onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-2xl font-bold text-neutral-900">{title}</h3>
-          <button onClick={onClose} className="text-neutral-400 hover:text-neutral-600"><X size={20} /></button>
+          <h3 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-neutral-900'}`}>{title}</h3>
+          <button onClick={onClose} className={`p-2 rounded-xl transition-colors ${isDark ? 'text-neutral-400 hover:text-white hover:bg-white/10' : 'text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100'}`}><X size={20} /></button>
         </div>
         {children}
       </motion.div>

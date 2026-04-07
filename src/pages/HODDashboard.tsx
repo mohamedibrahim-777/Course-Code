@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../AuthContext';
+import { useTheme } from '../ThemeContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Users, BookOpen, Activity, ChevronRight, BarChart, PieChart, TrendingUp, X, Mail, Timer, Coffee, Zap } from 'lucide-react';
 
 export default function HODDashboard() {
   const { token } = useAuth();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [staff, setStaff] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
   const [courses, setCourses] = useState<any[]>([]);
@@ -56,21 +59,26 @@ export default function HODDashboard() {
           <p className="text-neutral-500">Department-wide performance and activity monitoring.</p>
         </div>
         <div className="flex gap-2">
-          <div className="bg-neutral-900 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest">Live Monitoring</div>
+          <div className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest flex items-center gap-2 ${
+            isDark ? 'bg-white/10 text-white border border-white/10' : 'bg-neutral-900 text-white'
+          }`}>
+            <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+            Live Monitoring
+          </div>
         </div>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
         <div onClick={() => openReport('students')} className="cursor-pointer">
-          <StatCard icon={<Users />} label="Total Students" value={summary.totalStudents || students.length} />
+          <StatCard icon={<Users />} label="Total Students" value={summary.totalStudents || students.length} color="#0077FF" isDark={isDark} />
         </div>
         <div onClick={() => openReport('staff')} className="cursor-pointer">
-          <StatCard icon={<Shield />} label="Staff Members" value={summary.totalStaff || staff.length} />
+          <StatCard icon={<Shield />} label="Staff Members" value={summary.totalStaff || staff.length} color="#8B5CF6" isDark={isDark} />
         </div>
         <div onClick={() => openReport('courses')} className="cursor-pointer">
-          <StatCard icon={<BookOpen />} label="Total Courses" value={summary.totalCourses || courses.length} />
+          <StatCard icon={<BookOpen />} label="Total Courses" value={summary.totalCourses || courses.length} color="#F59E0B" isDark={isDark} />
         </div>
-        <StatCard icon={<Activity />} label="System Health" value="Optimal" />
+        <StatCard icon={<Activity />} label="System Health" value="Optimal" color="#22C55E" isDark={isDark} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -103,11 +111,11 @@ export default function HODDashboard() {
                       <p className="text-[10px] text-neutral-400 uppercase font-bold">Courses</p>
                     </div>
                   </div>
-                  <div className="w-full bg-neutral-100 h-2 rounded-full overflow-hidden">
+                  <div className={`w-full h-2 rounded-full overflow-hidden ${isDark ? 'bg-white/10' : 'bg-neutral-100'}`}>
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${Math.min((member.courses_created / Math.max(courses.length, 1)) * 100, 100)}%` }}
-                      className="bg-neutral-800 h-full rounded-full"
+                      className="bg-gradient-to-r from-[#0077FF] to-[#89CFF0] h-full rounded-full"
                     />
                   </div>
                 </div>
@@ -118,25 +126,29 @@ export default function HODDashboard() {
 
         {/* Quick Stats */}
         <section className="space-y-6">
-          <div className="bg-neutral-900 text-white p-8 rounded-3xl shadow-xl relative overflow-hidden">
+          <div className={`p-8 rounded-3xl shadow-xl relative overflow-hidden ${
+            isDark
+              ? 'bg-[#0077FF]/10 border border-[#0077FF]/20 text-white'
+              : 'bg-gradient-to-br from-[#0a0a2a] to-[#0f1035] text-white'
+          }`}>
             <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-              <BarChart size={20} className="text-neutral-600" /> Department Stats
+              <BarChart size={20} className="text-[#89CFF0]" /> Department Stats
             </h3>
             <div className="space-y-4 relative z-10">
               <div className="flex justify-between items-center">
-                <span className="text-neutral-400 text-sm">Total Lessons</span>
+                <span className="text-white/60 text-sm">Total Lessons</span>
                 <span className="font-bold">{summary.totalLessons || 0}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-neutral-400 text-sm">Lessons Completed</span>
+                <span className="text-white/60 text-sm">Lessons Completed</span>
                 <span className="font-bold">{summary.totalCompleted || 0}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-neutral-400 text-sm">Avg. Progress</span>
+                <span className="text-white/60 text-sm">Avg. Progress</span>
                 <span className="font-bold">{summary.avgProgress || 0}%</span>
               </div>
             </div>
-            <div className="absolute bottom-0 right-0 w-32 h-32 bg-neutral-800/10 rounded-full blur-3xl" />
+            <div className="absolute bottom-0 right-0 w-32 h-32 bg-[#0077FF]/20 rounded-full blur-3xl" />
           </div>
 
           <div className="bg-white p-8 rounded-3xl shadow-sm border border-neutral-100">
@@ -227,27 +239,62 @@ export default function HODDashboard() {
       {/* Full Report Modal */}
       <AnimatePresence>
         {showReport && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setShowReport(false)}>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            onClick={() => setShowReport(false)}
+          >
+            {/* Backdrop */}
+            <div
+              className="absolute inset-0"
+              style={{
+                background: isDark ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.3)',
+                backdropFilter: 'blur(24px)',
+                WebkitBackdropFilter: 'blur(24px)',
+              }}
+            />
+
+            {/* Modal */}
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white w-full max-w-2xl max-h-[80vh] overflow-y-auto p-8 rounded-3xl shadow-2xl"
+              initial={{ scale: 0.92, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.92, opacity: 0, y: 20 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+              className="relative z-10 w-full max-w-2xl p-8 rounded-3xl"
+              style={{
+                background: isDark ? 'rgba(20, 20, 50, 0.55)' : 'rgba(255, 255, 255, 0.45)',
+                backdropFilter: 'blur(40px) saturate(1.2)',
+                WebkitBackdropFilter: 'blur(40px) saturate(1.2)',
+                border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(255, 255, 255, 0.6)',
+                boxShadow: isDark
+                  ? '0 8px 32px rgba(0, 0, 0, 0.4)'
+                  : '0 8px 32px rgba(0, 0, 0, 0.08)',
+              }}
               onClick={e => e.stopPropagation()}
             >
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-2xl font-bold text-neutral-900 capitalize">{reportType} Report</h3>
-                <button onClick={() => setShowReport(false)} className="text-neutral-400 hover:text-neutral-600"><X size={20} /></button>
+                <h3 className={`text-2xl font-bold capitalize ${isDark ? 'text-white' : 'text-neutral-900'}`}>{reportType} Report</h3>
+                <button onClick={() => setShowReport(false)} className={`p-2 rounded-xl transition-colors ${isDark ? 'text-neutral-400 hover:text-white hover:bg-white/10' : 'text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100'}`}><X size={20} /></button>
               </div>
 
               {reportType === 'staff' && (
                 <div className="space-y-4">
                   {staff.map(s => (
-                    <div key={s.id} className="p-4 bg-neutral-50 rounded-xl flex items-center justify-between">
+                    <div key={s.id} className="p-5 rounded-2xl flex items-center justify-between"
+                      style={{
+                        background: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(255, 255, 255, 0.4)',
+                        border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(255, 255, 255, 0.5)',
+                      }}
+                    >
                       <div>
-                        <h4 className="font-bold text-neutral-900">{s.name}</h4>
+                        <h4 className={`font-bold ${isDark ? 'text-white' : 'text-neutral-900'}`}>{s.name}</h4>
                         <p className="text-sm text-neutral-500 flex items-center gap-1"><Mail size={12} /> {s.email}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-2xl font-bold text-neutral-900">{s.courses_created}</p>
+                        <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-neutral-900'}`}>{s.courses_created}</p>
                         <p className="text-xs text-neutral-400">courses created</p>
                       </div>
                     </div>
@@ -260,16 +307,24 @@ export default function HODDashboard() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-left">
                     <thead>
-                      <tr className="text-xs text-neutral-400 uppercase tracking-widest border-b border-neutral-100">
+                      <tr className={`text-xs uppercase tracking-widest border-b ${isDark ? 'text-neutral-400 border-white/10' : 'text-neutral-500 border-neutral-300/30'}`}>
                         <th className="pb-3">Name</th><th className="pb-3">Email</th><th className="pb-3">Completed</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-neutral-50">
+                    <tbody className={`divide-y ${isDark ? 'divide-white/5' : 'divide-neutral-200/30'}`}>
                       {students.map(s => (
                         <tr key={s.id}>
-                          <td className="py-3 font-bold text-neutral-900">{s.name}</td>
-                          <td className="py-3 text-sm text-neutral-500">{s.email}</td>
-                          <td className="py-3"><span className="bg-neutral-100 text-neutral-900 px-2 py-1 rounded-full text-xs font-bold">{s.lessons_completed} lessons</span></td>
+                          <td className={`py-3 font-bold ${isDark ? 'text-white' : 'text-neutral-900'}`}>{s.name}</td>
+                          <td className={`py-3 text-sm ${isDark ? 'text-neutral-400' : 'text-neutral-500'}`}>{s.email}</td>
+                          <td className="py-3">
+                            <span className="px-3 py-1 rounded-full text-xs font-bold"
+                              style={{
+                                background: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+                                color: isDark ? '#fff' : '#171717',
+                                border: isDark ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid rgba(0, 0, 0, 0.08)',
+                              }}
+                            >{s.lessons_completed} lessons</span>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -281,10 +336,20 @@ export default function HODDashboard() {
               {reportType === 'courses' && (
                 <div className="space-y-4">
                   {courses.map((c: any) => (
-                    <div key={c.id} className="p-4 bg-neutral-50 rounded-xl">
+                    <div key={c.id} className="p-5 rounded-2xl"
+                      style={{
+                        background: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(255, 255, 255, 0.4)',
+                        border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(255, 255, 255, 0.5)',
+                      }}
+                    >
                       <div className="flex items-center justify-between">
-                        <h4 className="font-bold text-neutral-900">{c.title}</h4>
-                        <span className="text-xs bg-neutral-100 text-neutral-900 px-2 py-1 rounded-full font-bold uppercase">{c.level}</span>
+                        <h4 className={`font-bold ${isDark ? 'text-white' : 'text-neutral-900'}`}>{c.title}</h4>
+                        <span className="text-xs px-2 py-1 rounded-full font-bold uppercase"
+                          style={{
+                            background: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+                            color: isDark ? '#fff' : '#171717',
+                          }}
+                        >{c.level}</span>
                       </div>
                       <p className="text-sm text-neutral-500 mt-1">{c.language} &bull; {c.description}</p>
                     </div>
@@ -293,24 +358,32 @@ export default function HODDashboard() {
                 </div>
               )}
             </motion.div>
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
   );
 }
 
-function StatCard({ icon, label, value }: any) {
+function StatCard({ icon, label, value, color = '#0077FF', isDark = false }: any) {
   return (
     <motion.div
-      whileHover={{ scale: 1.03, boxShadow: '0 0 18px rgba(0,119,255,0.3), 0 0 40px rgba(0,119,255,0.1)' }}
-      whileTap={{ scale: 0.97, boxShadow: '0 0 24px rgba(0,119,255,0.5), 0 0 60px rgba(0,119,255,0.15)' }}
+      whileHover={{ scale: 1.03 }}
+      whileTap={{ scale: 0.97 }}
       transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-      className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-100 cursor-pointer"
+      className="p-6 rounded-2xl cursor-pointer relative overflow-hidden"
+      style={{
+        background: isDark ? 'rgba(12, 12, 30, 0.97)' : 'rgba(255, 255, 255, 0.97)',
+        border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(0, 0, 0, 0.06)',
+        boxShadow: isDark
+          ? '0 2px 8px rgba(0, 0, 0, 0.3)'
+          : '0 1px 3px rgba(0, 0, 0, 0.05), 0 4px 16px rgba(0, 0, 0, 0.03)',
+      }}
     >
-      <div className="text-neutral-900 mb-3">{icon}</div>
-      <p className="text-xs text-neutral-500 font-medium uppercase tracking-widest">{label}</p>
-      <p className="text-2xl font-bold text-neutral-900 mt-1">{value}</p>
+      <div className="mb-3" style={{ color: isDark ? '#e0e0e8' : color }}>{icon}</div>
+      <p className={`text-xs font-medium uppercase tracking-widest ${isDark ? 'text-neutral-400' : 'text-neutral-500'}`}>{label}</p>
+      <p className={`text-2xl font-bold mt-1 ${isDark ? 'text-white' : 'text-neutral-900'}`}>{value}</p>
+      <div className="absolute -bottom-4 -right-4 w-16 h-16 rounded-full blur-2xl opacity-15" style={{ background: color }} />
     </motion.div>
   );
 }

@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { ArrowRight, BookOpen, Code, Download, Shield, Users, Zap } from 'lucide-react';
+import { useTheme } from '../ThemeContext';
 
 const stagger = {
   hidden: {},
@@ -13,6 +14,8 @@ const fadeUp = {
 };
 
 export default function Landing() {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   return (
     <div className="space-y-24 pb-20">
       {/* Hero Section */}
@@ -27,7 +30,11 @@ export default function Landing() {
           </motion.span>
           <motion.h1 variants={fadeUp} className="text-5xl md:text-7xl font-black text-neutral-900 leading-tight mb-8">
             Master Programming <br />
-            <span className="bg-gradient-to-r from-[#0077FF] via-[#89CFF0] to-white bg-clip-text text-transparent">From Zero to Hero</span>
+            <span className={`bg-gradient-to-r bg-clip-text text-transparent ${
+              isDark
+                ? 'from-[#0077FF] via-[#89CFF0] to-white'
+                : 'from-[#0055CC] via-[#0077FF] to-[#89CFF0]'
+            }`}>From Zero to Hero</span>
           </motion.h1>
           <motion.p variants={fadeUp} className="text-xl text-neutral-500 mb-10 leading-relaxed max-w-2xl mx-auto">
             A structured, department-led platform designed to take you from beginner basics to advanced professional engineering.
@@ -39,7 +46,11 @@ export default function Landing() {
               </Link>
             </motion.div>
             <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
-              <Link to="/login" className="w-full sm:w-auto bg-[rgba(137,207,240,0.12)] text-[#89CFF0] border border-[rgba(137,207,240,0.3)] px-10 py-4 rounded-2xl font-bold text-lg flex items-center justify-center backdrop-blur-sm hover:bg-[rgba(137,207,240,0.2)] transition-all">
+              <Link to="/login" className={`w-full sm:w-auto px-10 py-4 rounded-2xl font-bold text-lg flex items-center justify-center backdrop-blur-sm transition-all border ${
+                isDark
+                  ? 'bg-[rgba(137,207,240,0.12)] text-[#89CFF0] border-[rgba(137,207,240,0.3)] hover:bg-[rgba(137,207,240,0.2)]'
+                  : 'bg-[rgba(0,119,255,0.08)] text-[#0055CC] border-[rgba(0,119,255,0.2)] hover:bg-[rgba(0,119,255,0.15)]'
+              }`}>
                 Student Login
               </Link>
             </motion.div>
