@@ -19,9 +19,12 @@ if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, uploadsDir),
-  filename: (_req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`),
+  filename: (_req, file, cb) => {
+    const sanitized = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_');
+    cb(null, `${Date.now()}-${sanitized}`);
+  },
 });
-const upload = multer({ storage, limits: { fileSize: 50 * 1024 * 1024 } });
+const upload = multer({ storage, limits: { fileSize: 200 * 1024 * 1024 } });
 
 // Initialize Database
 db.exec(`
@@ -125,10 +128,28 @@ async function startServer() {
   app.use('/uploads', express.static(uploadsDir));
 
   // --- File Upload ---
-  app.post('/api/upload', upload.single('file'), (req: any, res) => {
-    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-    const fileUrl = `/uploads/${req.file.filename}`;
-    res.json({ success: true, url: fileUrl, filename: req.file.originalname });
+  app.post('/api/upload', (req: any, res) => {
+    upload.single('file')(req, res, (err: any) => {
+      if (err) {
+        if (err.code === 'LIMIT_FILE_SIZE') return res.status(413).json({ error: 'File too large (max 200MB)' });
+        return res.status(400).json({ error: err.message || 'Upload failed' });
+      }
+      if (!req.file) return res.status(400).json({ error: 'No file selected' });
+      const fileUrl = `/uploads/${req.file.filename}`;
+      res.json({ success: true, url: fileUrl, filename: req.file.originalname });
+    });
+  });
+
+  // --- File Download (forces browser download instead of opening) ---
+  app.get('/api/download', (req, res) => {
+    const fileUrl = req.query.url as string;
+    const name = req.query.name as string;
+    if (!fileUrl) return res.status(400).json({ error: 'Missing url' });
+    const filename = fileUrl.replace('/uploads/', '');
+    const filePath = path.join(uploadsDir, filename);
+    if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'File not found' });
+    const downloadName = name || filename.replace(/^\d+-/, '');
+    res.download(filePath, downloadName);
   });
 
   // --- Auth Routes ---
@@ -241,6 +262,8 @@ async function startServer() {
     if (req.user.role === 'student') return res.status(403).json({ error: 'Forbidden' });
     const lessonIds = db.prepare('SELECT id FROM lessons WHERE course_id = ?').all(req.params.id) as any[];
     for (const l of lessonIds) {
+      db.prepare('DELETE FROM comments WHERE parent_id IN (SELECT id FROM comments WHERE lesson_id = ?)').run(l.id);
+      db.prepare('DELETE FROM comments WHERE lesson_id = ?').run(l.id);
       db.prepare('DELETE FROM progress WHERE lesson_id = ?').run(l.id);
     }
     db.prepare('DELETE FROM lessons WHERE course_id = ?').run(req.params.id);
@@ -266,6 +289,9 @@ async function startServer() {
 
   app.delete('/api/lessons/:id', authenticate, (req: any, res) => {
     if (req.user.role === 'student') return res.status(403).json({ error: 'Forbidden' });
+    db.prepare('DELETE FROM comments WHERE parent_id IN (SELECT id FROM comments WHERE lesson_id = ?)').run(req.params.id);
+    db.prepare('DELETE FROM comments WHERE lesson_id = ?').run(req.params.id);
+    db.prepare('DELETE FROM progress WHERE lesson_id = ?').run(req.params.id);
     db.prepare('DELETE FROM lessons WHERE id = ?').run(req.params.id);
     res.json({ success: true });
   });
@@ -361,6 +387,23 @@ async function startServer() {
       FROM comments c JOIN users u ON c.user_id = u.id WHERE c.id = ?
     `).get(result.lastInsertRowid);
     res.json(comment);
+  });
+
+  // --- All Comments (for Staff/HOD dashboard) ---
+  app.get('/api/comments/all', authenticate, (req: any, res) => {
+    if (req.user.role === 'student') return res.status(403).json({ error: 'Forbidden' });
+    const comments = db.prepare(`
+      SELECT c.id, c.lesson_id, c.user_id, c.parent_id, c.content, c.created_at,
+        u.name as user_name, u.role as user_role, u.profile_pic,
+        l.title as lesson_title, l.course_id,
+        co.title as course_title
+      FROM comments c
+      JOIN users u ON c.user_id = u.id
+      JOIN lessons l ON c.lesson_id = l.id
+      JOIN courses co ON l.course_id = co.id
+      ORDER BY c.created_at DESC
+    `).all();
+    res.json(comments);
   });
 
   app.delete('/api/comments/:id', authenticate, (req: any, res) => {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Users, BookOpen, BarChart3, Trash2, Edit, X, FileText, Save, ChevronDown, ChevronUp, Upload, Timer, Coffee, Zap } from 'lucide-react';
+import { Plus, Users, BookOpen, BarChart3, Trash2, Edit, X, FileText, Save, ChevronDown, ChevronUp, Upload, Timer, Coffee, Zap, MessageCircle, Send, Reply } from 'lucide-react';
 import { Course, Lesson } from '../types';
 
 export default function AdminDashboard() {
@@ -17,23 +17,29 @@ export default function AdminDashboard() {
   const [newCourse, setNewCourse] = useState({ title: '', description: '', language: '', level: 'beginner' });
   const [newLesson, setNewLesson] = useState({ title: '', content: '', video_url: '', resource_url: '', resource_type: 'pdf', order_index: 1 });
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
   const [loading, setLoading] = useState(true);
   const [focusData, setFocusData] = useState<any[]>([]);
+  const [allComments, setAllComments] = useState<any[]>([]);
+  const [replyingTo, setReplyingTo] = useState<number | null>(null);
+  const [replyText, setReplyText] = useState('');
 
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
 
   const fetchData = async () => {
     try {
-      const [coursesRes, studentsRes, summaryRes, focusRes] = await Promise.all([
+      const [coursesRes, studentsRes, summaryRes, focusRes, commentsRes] = await Promise.all([
         fetch('/api/courses', { headers }),
         fetch('/api/analytics/students', { headers }),
         fetch('/api/analytics/summary', { headers }),
         fetch('/api/analytics/focus', { headers }),
+        fetch('/api/comments/all', { headers }),
       ]);
       setCourses(await coursesRes.json());
       setStudents(await studentsRes.json());
       setSummary(await summaryRes.json());
       setFocusData(await focusRes.json());
+      setAllComments(await commentsRes.json());
     } catch (err) {
       console.error(err);
     } finally {
@@ -97,16 +103,24 @@ export default function AdminDashboard() {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
+    setUploadError('');
     const formData = new FormData();
     formData.append('file', file);
     try {
       const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Upload failed' }));
+        setUploadError(err.error || `Upload failed (${res.status})`);
+        return;
+      }
       const data = await res.json();
       if (data.success) {
         setNewLesson(prev => ({ ...prev, [field]: data.url }));
+      } else {
+        setUploadError(data.error || 'Upload failed');
       }
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      setUploadError(err.message || 'Upload failed - check file size');
     } finally {
       setUploading(false);
     }
@@ -215,13 +229,32 @@ export default function AdminDashboard() {
                                 onChange={e => setNewLesson({ ...newLesson, content: e.target.value })}
                                 className="w-full px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-neutral-800 h-20"
                               />
-                              <div>
-                                <label className="flex items-center gap-2 px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm cursor-pointer hover:bg-neutral-100 transition-colors">
-                                  <Upload size={16} className="text-neutral-500" />
-                                  <span className="text-neutral-500">{newLesson.video_url ? 'Video uploaded' : 'Upload Video (optional)'}</span>
-                                  <input type="file" accept="video/*" className="hidden" onChange={e => handleFileUpload(e, 'video_url')} />
+                              <div className="space-y-2">
+                                <label className={`flex items-center gap-2 px-3 py-2 border rounded-lg text-sm cursor-pointer transition-colors ${
+                                  newLesson.video_url && newLesson.video_url.startsWith('/uploads')
+                                    ? 'bg-green-50 border-green-300 hover:bg-green-100'
+                                    : 'bg-neutral-50 border-neutral-200 hover:bg-neutral-100'
+                                }`}>
+                                  <Upload size={16} className={newLesson.video_url && newLesson.video_url.startsWith('/uploads') ? 'text-green-600' : 'text-neutral-500'} />
+                                  <span className={newLesson.video_url && newLesson.video_url.startsWith('/uploads') ? 'text-green-700 font-medium' : 'text-neutral-500'}>
+                                    {uploading ? 'Uploading...' : newLesson.video_url && newLesson.video_url.startsWith('/uploads') ? `Video ready: ${newLesson.video_url.split('/').pop()}` : 'Upload Video (mp4, webm, ogg)'}
+                                  </span>
+                                  <input type="file" accept="video/mp4,video/webm,video/ogg,video/*" className="hidden" disabled={uploading} onChange={e => handleFileUpload(e, 'video_url')} />
                                 </label>
-                                {newLesson.video_url && <p className="text-xs text-green-600 mt-1">Uploaded: {newLesson.video_url.split('/').pop()}</p>}
+                                {uploading && (
+                                  <div className="w-full bg-neutral-200 h-1.5 rounded-full overflow-hidden">
+                                    <div className="bg-[#0077FF] h-full rounded-full animate-pulse" style={{ width: '60%' }} />
+                                  </div>
+                                )}
+                                {uploadError && <p className="text-xs text-red-500 mt-1">{uploadError}</p>}
+                                <div className="flex items-center gap-2 text-xs text-neutral-400">
+                                  <span className="flex-1 border-t border-neutral-200" />or paste link<span className="flex-1 border-t border-neutral-200" />
+                                </div>
+                                <input type="text" placeholder="YouTube or video URL (optional)"
+                                  value={newLesson.video_url?.startsWith('/uploads') ? '' : (newLesson.video_url || '')}
+                                  onChange={e => { if (!uploading) setNewLesson({ ...newLesson, video_url: e.target.value }); }}
+                                  className="w-full px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-neutral-800"
+                                />
                               </div>
                               <div>
                                 <label className="flex items-center gap-2 px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm cursor-pointer hover:bg-neutral-100 transition-colors">
@@ -231,7 +264,6 @@ export default function AdminDashboard() {
                                 </label>
                                 {newLesson.resource_url && <p className="text-xs text-green-600 mt-1">Uploaded: {newLesson.resource_url.split('/').pop()}</p>}
                               </div>
-                              {uploading && <p className="text-xs text-neutral-500 animate-pulse">Uploading file...</p>}
                               <div className="flex gap-2">
                                 <select value={newLesson.resource_type} onChange={e => setNewLesson({ ...newLesson, resource_type: e.target.value })}
                                   className="flex-1 px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm outline-none">
@@ -248,8 +280,8 @@ export default function AdminDashboard() {
                               <div className="flex gap-2">
                                 <button type="button" onClick={() => setShowAddLesson(false)}
                                   className="flex-1 py-2 bg-neutral-100 text-neutral-600 font-bold rounded-lg text-sm hover:bg-neutral-200">Cancel</button>
-                                <button type="submit"
-                                  className="btn-glow flex-1 py-2 bg-neutral-900 text-white font-bold rounded-lg text-sm hover:bg-neutral-800">Add Lesson</button>
+                                <button type="submit" disabled={uploading}
+                                  className={`btn-glow flex-1 py-2 font-bold rounded-lg text-sm ${uploading ? 'bg-neutral-400 text-neutral-200 cursor-not-allowed' : 'bg-neutral-900 text-white hover:bg-neutral-800'}`}>{uploading ? 'Wait for upload...' : 'Add Lesson'}</button>
                               </div>
                             </form>
                           )}
@@ -363,6 +395,119 @@ export default function AdminDashboard() {
                 })}
               </tbody>
             </table>
+          </div>
+        )}
+      </section>
+
+      {/* Student Doubts & Comments */}
+      <section className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-100">
+        <h2 className="text-xl font-bold text-neutral-900 mb-6 flex items-center gap-2">
+          <MessageCircle className="text-[#0077FF]" size={24} /> Student Doubts
+          {allComments.filter(c => !c.parent_id).length > 0 && (
+            <span className="text-xs bg-neutral-100 text-neutral-500 px-2 py-0.5 rounded-full">{allComments.filter(c => !c.parent_id).length}</span>
+          )}
+        </h2>
+        {allComments.filter(c => !c.parent_id).length === 0 ? (
+          <p className="text-neutral-400 text-center py-8">No student doubts yet.</p>
+        ) : (
+          <div className="space-y-4 max-h-[600px] overflow-y-auto pr-1">
+            {allComments.filter(c => !c.parent_id).map(comment => {
+              const replies = allComments.filter(c => c.parent_id === comment.id);
+              const timeAgo = (date: string) => {
+                const diff = Date.now() - new Date(date + (date.includes('Z') ? '' : 'Z')).getTime();
+                const mins = Math.floor(diff / 60000);
+                if (mins < 1) return 'just now';
+                if (mins < 60) return `${mins}m ago`;
+                const hrs = Math.floor(mins / 60);
+                if (hrs < 24) return `${hrs}h ago`;
+                return `${Math.floor(hrs / 24)}d ago`;
+              };
+              return (
+                <div key={comment.id} className="bg-neutral-50 border border-neutral-100 rounded-2xl p-4">
+                  {/* Course & Lesson tag */}
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-[10px] font-bold uppercase tracking-widest bg-neutral-200 text-neutral-600 px-2 py-0.5 rounded-full">{comment.course_title}</span>
+                    <span className="text-[10px] text-neutral-400">&bull;</span>
+                    <span className="text-[10px] font-medium text-neutral-500">{comment.lesson_title}</span>
+                  </div>
+                  {/* Comment header */}
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-7 h-7 rounded-full bg-neutral-200 flex items-center justify-center text-[10px] font-bold text-neutral-600 shrink-0">
+                      {comment.user_name[0].toUpperCase()}
+                    </div>
+                    <span className="text-sm font-bold text-neutral-900">{comment.user_name}</span>
+                    {comment.user_role === 'staff' && <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase rounded bg-[#0077FF]/20 text-[#0077FF]">Staff</span>}
+                    {comment.user_role === 'hod' && <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase rounded bg-[#DC143C]/20 text-[#DC143C]">HOD</span>}
+                    <span className="text-[10px] text-neutral-400">{timeAgo(comment.created_at)}</span>
+                  </div>
+                  {/* Comment body */}
+                  <p className="text-sm text-neutral-700 leading-relaxed ml-9 whitespace-pre-wrap">{comment.content}</p>
+
+                  {/* Reply button */}
+                  <div className="ml-9 mt-2">
+                    <button
+                      onClick={() => { setReplyingTo(replyingTo === comment.id ? null : comment.id); setReplyText(''); }}
+                      className="text-[11px] font-bold text-neutral-400 hover:text-[#0077FF] flex items-center gap-1 transition-colors"
+                    >
+                      <Reply size={12} /> Reply
+                    </button>
+                  </div>
+
+                  {/* Existing replies */}
+                  {replies.length > 0 && (
+                    <div className="ml-9 mt-3 space-y-3 pl-4 border-l-2 border-neutral-200">
+                      {replies.map(reply => (
+                        <div key={reply.id} className="flex items-start gap-2">
+                          <div className="w-6 h-6 rounded-full bg-neutral-200 flex items-center justify-center text-[9px] font-bold text-neutral-600 shrink-0 mt-0.5">
+                            {reply.user_name[0].toUpperCase()}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-xs font-bold text-neutral-900">{reply.user_name}</span>
+                              {reply.user_role === 'staff' && <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase rounded bg-[#0077FF]/20 text-[#0077FF]">Staff</span>}
+                              {reply.user_role === 'hod' && <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase rounded bg-[#DC143C]/20 text-[#DC143C]">HOD</span>}
+                              <span className="text-[10px] text-neutral-400">{timeAgo(reply.created_at)}</span>
+                            </div>
+                            <p className="text-xs text-neutral-600 leading-relaxed mt-0.5 whitespace-pre-wrap">{reply.content}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Reply input */}
+                  {replyingTo === comment.id && (
+                    <div className="ml-9 mt-3">
+                      <div className="flex gap-2">
+                        <textarea
+                          autoFocus
+                          value={replyText}
+                          onChange={e => setReplyText(e.target.value)}
+                          placeholder={`Reply to ${comment.user_name}...`}
+                          className="flex-1 px-3 py-2 bg-white border border-neutral-200 rounded-lg outline-none focus:ring-2 focus:ring-[#0077FF]/40 text-xs resize-none h-16"
+                        />
+                        <button
+                          onClick={async () => {
+                            if (!replyText.trim()) return;
+                            await fetch(`/api/lessons/${comment.lesson_id}/comments`, {
+                              method: 'POST', headers,
+                              body: JSON.stringify({ content: replyText, parent_id: comment.id }),
+                            });
+                            setReplyingTo(null);
+                            setReplyText('');
+                            fetchData();
+                          }}
+                          disabled={!replyText.trim()}
+                          className="bg-[#0077FF] text-white px-3 rounded-lg text-xs font-bold hover:bg-[#0066DD] transition-colors disabled:opacity-40 self-end py-2"
+                        >
+                          <Send size={12} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </section>

@@ -86,8 +86,13 @@ export default function CourseView() {
     }
   };
 
-  const handleDownload = (url: string, type: string) => {
-    window.open(url, '_blank');
+  const handleDownload = (url: string, name?: string) => {
+    const a = document.createElement('a');
+    a.href = `/api/download?url=${encodeURIComponent(url)}${name ? `&name=${encodeURIComponent(name)}` : ''}`;
+    a.download = '';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   if (loading) return <div className="text-center py-20">Loading course content...</div>;
@@ -153,9 +158,12 @@ export default function CourseView() {
                     />
                   ) : (
                     <video
+                      key={activeLesson.video_url}
                       src={activeLesson.video_url}
                       controls
-                      className="w-full h-full"
+                      preload="metadata"
+                      className="w-full h-full object-contain"
+                      style={{ display: 'block' }}
                       onEnded={() => setVideoWatched(prev => ({ ...prev, [activeLesson.id]: true }))}
                       onTimeUpdate={(e) => {
                         const video = e.currentTarget;
@@ -169,6 +177,15 @@ export default function CourseView() {
                     <div className="absolute top-3 right-3 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-lg flex items-center gap-1">
                       <Eye size={12} /> Watched
                     </div>
+                  )}
+                  {/* Download video button (only for uploaded videos, not YouTube) */}
+                  {!(activeLesson.video_url.includes('youtube.com') || activeLesson.video_url.includes('youtu.be')) && (
+                    <button
+                      onClick={() => handleDownload(activeLesson.video_url!, `${activeLesson.title}.mp4`)}
+                      className="absolute bottom-3 right-3 bg-white/90 backdrop-blur text-neutral-800 text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 hover:bg-white transition-colors shadow-sm"
+                    >
+                      <Download size={12} /> Download Video
+                    </button>
                   )}
                 </div>
               ) : (
@@ -198,7 +215,9 @@ export default function CourseView() {
                     </div>
                     <button
                       onClick={() => {
-                        handleDownload(activeLesson.resource_url!, activeLesson.resource_type || 'file');
+                        const extMap: Record<string, string> = { pdf: '.pdf', doc: '.docx', excel: '.xlsx', image: '.png' };
+                        const ext = extMap[activeLesson.resource_type || 'pdf'] || '';
+                        handleDownload(activeLesson.resource_url!, `${activeLesson.title}${ext}`);
                         setResourceDownloaded(prev => ({ ...prev, [activeLesson.id]: true }));
                       }}
                       className={`px-4 py-2 rounded-lg text-sm font-bold border flex items-center gap-2 transition-colors ${
