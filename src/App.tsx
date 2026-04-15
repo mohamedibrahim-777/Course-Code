@@ -24,6 +24,7 @@ import Navbar from './components/Navbar';
 import LoadingScreen from './components/LoadingScreen';
 import PageLoader from './components/PageLoader';
 import AnimatedBackground from './components/AnimatedBackground';
+import ClickSpark from './components/ClickSpark';
 
 const PageWrapper = ({ children }: { children: React.ReactNode }) => (
   <motion.div
@@ -68,6 +69,13 @@ const AppContent = () => {
 
   return (
     <div className={`${theme === 'dark' ? 'dark-bg' : 'light-bg'} min-h-screen font-sans flex flex-col relative`}>
+      <ClickSpark
+        sparkColor={theme === 'dark' ? '#ffffff' : '#0077FF'}
+        sparkSize={10}
+        sparkRadius={18}
+        sparkCount={10}
+        duration={500}
+      />
       <Navbar />
       <AnimatePresence>{pageLoading && <PageLoader />}</AnimatePresence>
       <main className="container mx-auto px-4 py-8 flex-1">
