@@ -174,18 +174,19 @@ app.post('/api/auth/register-request', (req, res) => {
 });
 
 app.post('/api/auth/verify-register', (req, res) => {
-  const { name, email, password, otp } = req.body;
+  const { name, email, password, otp, role } = req.body;
   const record: any = db.prepare('SELECT * FROM otps WHERE email = ? AND otp = ?').get(email, otp);
   if (!record || new Date(record.expires_at) < new Date()) {
     return res.status(401).json({ error: 'Invalid or expired OTP' });
   }
+  const finalRole = role === 'staff' ? 'staff' : 'student';
   db.prepare('DELETE FROM otps WHERE email = ?').run(email);
   try {
     const hashedPassword = bcrypt.hashSync(password, 10);
     const id = randomUUID();
     db.prepare('INSERT INTO users (id, name, email, password, role) VALUES (?, ?, ?, ?, ?)')
-      .run(id, name, email, hashedPassword, 'student');
-    const user = { id, name, email, role: 'student' };
+      .run(id, name, email, hashedPassword, finalRole);
+    const user = { id, name, email, role: finalRole };
     const token = jwt.sign(user, JWT_SECRET, { expiresIn: '24h' });
     res.json({ success: true, token, user });
   } catch (error: any) {

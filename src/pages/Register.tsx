@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { motion } from 'framer-motion';
-import { User, Mail, Lock, ArrowRight, ShieldCheck, Eye, EyeOff } from 'lucide-react';
+import { User, Mail, Lock, ArrowRight, ShieldCheck, Eye, EyeOff, GraduationCap, Briefcase } from 'lucide-react';
 
 export default function Register() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState<'student' | 'staff'>('student');
   const [otp, setOtp] = useState('');
   const [step, setStep] = useState(1); // 1: Form, 2: OTP
   const [error, setError] = useState('');
@@ -24,7 +25,7 @@ export default function Register() {
       const res = await fetch('/api/auth/register-request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, email, password, role }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -47,7 +48,7 @@ export default function Register() {
       const res = await fetch('/api/auth/verify-register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, otp }),
+        body: JSON.stringify({ name, email, password, otp, role }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -97,6 +98,34 @@ export default function Register() {
 
         {step === 1 ? (
           <form onSubmit={handleRegisterRequest} className="space-y-5">
+            <div>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setRole('student')}
+                  className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 font-semibold transition-all ${
+                    role === 'student'
+                      ? 'border-[#0077FF] bg-[#0077FF]/10 text-[#0077FF]'
+                      : 'border-neutral-200 bg-neutral-50 text-neutral-500 hover:border-neutral-300'
+                  }`}
+                >
+                  <GraduationCap size={18} />
+                  Student
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRole('staff')}
+                  className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 font-semibold transition-all ${
+                    role === 'staff'
+                      ? 'border-[#0077FF] bg-[#0077FF]/10 text-[#0077FF]'
+                      : 'border-neutral-200 bg-neutral-50 text-neutral-500 hover:border-neutral-300'
+                  }`}
+                >
+                  <Briefcase size={18} />
+                  Staff
+                </button>
+              </div>
+            </div>
             <div>
               <label className="block text-sm font-semibold text-neutral-700 mb-1">Full Name</label>
               <div className="relative">
