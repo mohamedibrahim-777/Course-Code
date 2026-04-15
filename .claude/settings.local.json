@@ -44,7 +44,28 @@
       "Bash(python3 -c \"\nimport zipfile, xml.etree.ElementTree as ET\nfor f in ['Main Project sample report.docx', 'project content First page 25-26.docx']:\n    print\\(f'=== {f} ==='\\)\n    try:\n        z = zipfile.ZipFile\\(f\\)\n        tree = ET.parse\\(z.open\\('word/document.xml'\\)\\)\n        ns = {'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'}\n        for p in tree.findall\\('.//w:p', ns\\):\n            text = ''.join\\(r.text for r in p.findall\\('.//w:t', ns\\) if r.text\\)\n            if text.strip\\(\\): print\\(text\\)\n    except Exception as e:\n        print\\(f'Error: {e}'\\)\n    print\\(\\)\n\" 2>/dev/null || python -c \"\nimport zipfile, xml.etree.ElementTree as ET\nfor f in ['Main Project sample report.docx', 'project content First page 25-26.docx']:\n    print\\(f'=== {f} ==='\\)\n    try:\n        z = zipfile.ZipFile\\(f\\)\n        tree = ET.parse\\(z.open\\('word/document.xml'\\)\\)\n        ns = {'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'}\n        for p in tree.findall\\('.//w:p', ns\\):\n            text = ''.join\\(r.text for r in p.findall\\('.//w:t', ns\\) if r.text\\)\n            if text.strip\\(\\): print\\(text\\)\n    except Exception as e:\n        print\\(f'Error: {e}'\\)\n    print\\(\\)\n\")",
       "Bash(curl:*)",
       "Bash(git init:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git config:*)",
+      "Bash(git branch:*)",
+      "Bash(git pull:*)",
+      "Bash(npm run:*)",
+      "Bash(npx kill-port:*)",
+      "Bash(lsof -ti:3000)",
+      "Bash(xargs kill:*)",
+      "Bash(taskkill //F //FI 'WINDOWTITLE eq npm*')",
+      "Bash(fuser -k 3000/tcp)",
+      "Bash(powershell -Command \"Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_wningProcess -Force -ErrorAction SilentlyContinue }\")",
+      "Bash(node -e \"const Database = require\\(''better-sqlite3''\\); const db = new Database\\(''database.db''\\); const tables = db.prepare\\(\"\"SELECT name FROM sqlite_master WHERE type=''table''\"\"\\).all\\(\\); console.log\\(''Tables:'', tables\\); for \\(const t of tables\\) { console.log\\(''\\\\n--- '' + t.name + '' ---''\\); try { const rows = db.prepare\\(''SELECT * FROM '' + t.name + '' LIMIT 50''\\).all\\(\\); console.log\\(JSON.stringify\\(rows, null, 2\\)\\); } catch\\(e\\) { console.log\\(e.message\\); } }\")",
+      "WebFetch(domain:chat.z.ai)",
+      "Bash(taskkill //F //FI \"WINDOWTITLE eq tsx server.ts\")",
+      "Bash(powershell -Command \"Get-Process -Id \\(Get-NetTCPConnection -LocalPort 3000\\).OwningProcess -ErrorAction SilentlyContinue | Stop-Process -Force\")",
+      "Bash(npx vite:*)",
+      "Bash(netstat -ano)",
+      "Bash(taskkill //F //IM node.exe)",
+      "Bash(node -e ':*)",
+      "Bash(node -e \"const Database = require\\('better-sqlite3'\\); const db = new Database\\('database.db'\\); console.log\\('Courses:', JSON.stringify\\(db.prepare\\('SELECT * FROM courses'\\).all\\(\\)\\)\\); console.log\\('Lessons:', JSON.stringify\\(db.prepare\\('SELECT * FROM lessons'\\).all\\(\\)\\)\\);\")",
+      "Bash(node -e \"const Database = require\\('better-sqlite3'\\); const db = new Database\\('database.db', { readonly: true }\\); console.log\\('CONNECTED: SQLite'\\); console.log\\('Version:', db.prepare\\('SELECT sqlite_version\\(\\) as v'\\).get\\(\\).v\\); const tables = db.prepare\\(\\\\\"SELECT name FROM sqlite_master WHERE type='table' ORDER BY name\\\\\"\\).all\\(\\); console.log\\('Tables:', tables.map\\(t=>t.name\\).join\\(', '\\)\\); console.log\\('Users count:', db.prepare\\('SELECT COUNT\\(*\\) as c FROM users'\\).get\\(\\).c\\); console.log\\('Courses count:', db.prepare\\('SELECT COUNT\\(*\\) as c FROM courses'\\).get\\(\\).c\\); db.close\\(\\);\")"
     ]
   }
 }
