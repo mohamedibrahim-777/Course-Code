@@ -12,7 +12,7 @@ export default function AdminDashboard() {
   const [summary, setSummary] = useState<any>({});
   const [showAddCourse, setShowAddCourse] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
-  const [managingLessons, setManagingLessons] = useState<number | null>(null);
+  const [managingLessons, setManagingLessons] = useState<string | null>(null);
   const [courseLessons, setCourseLessons] = useState<Lesson[]>([]);
   const [showAddLesson, setShowAddLesson] = useState(false);
   const [newCourse, setNewCourse] = useState({ title: '', description: '', language: '', level: 'beginner' });
@@ -22,8 +22,9 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [focusData, setFocusData] = useState<any[]>([]);
   const [allComments, setAllComments] = useState<any[]>([]);
-  const [replyingTo, setReplyingTo] = useState<number | null>(null);
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
 
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
 
@@ -41,8 +42,8 @@ export default function AdminDashboard() {
       setSummary(await summaryRes.json());
       setFocusData(await focusRes.json());
       setAllComments(await commentsRes.json());
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      setErrorMsg(err?.message || 'Failed to load dashboard');
     } finally {
       setLoading(false);
     }
@@ -52,52 +53,78 @@ export default function AdminDashboard() {
 
   const handleAddCourse = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = await fetch('/api/courses', { method: 'POST', headers, body: JSON.stringify(newCourse) });
-    if (res.ok) {
-      setShowAddCourse(false);
-      setNewCourse({ title: '', description: '', language: '', level: 'beginner' });
-      fetchData();
-    }
+    setErrorMsg('');
+    try {
+      const res = await fetch('/api/courses', { method: 'POST', headers, body: JSON.stringify(newCourse) });
+      if (res.ok) {
+        setShowAddCourse(false);
+        setNewCourse({ title: '', description: '', language: '', level: 'beginner' });
+        fetchData();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setErrorMsg(data.error || 'Failed to create course');
+      }
+    } catch (err: any) { setErrorMsg(err?.message || 'Network error'); }
   };
 
   const handleEditCourse = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingCourse) return;
-    const res = await fetch(`/api/courses/${editingCourse.id}`, { method: 'PUT', headers, body: JSON.stringify(editingCourse) });
-    if (res.ok) {
-      setEditingCourse(null);
-      fetchData();
-    }
+    setErrorMsg('');
+    try {
+      const res = await fetch(`/api/courses/${editingCourse.id}`, { method: 'PUT', headers, body: JSON.stringify(editingCourse) });
+      if (res.ok) {
+        setEditingCourse(null);
+        fetchData();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setErrorMsg(data.error || 'Failed to update course');
+      }
+    } catch (err: any) { setErrorMsg(err?.message || 'Network error'); }
   };
 
-  const handleDeleteCourse = async (id: number) => {
+  const handleDeleteCourse = async (id: string) => {
     if (!confirm('Delete this course and all its lessons?')) return;
-    const res = await fetch(`/api/courses/${id}`, { method: 'DELETE', headers });
-    if (res.ok) fetchData();
+    try {
+      const res = await fetch(`/api/courses/${id}`, { method: 'DELETE', headers });
+      if (res.ok) fetchData();
+      else {
+        const data = await res.json().catch(() => ({}));
+        setErrorMsg(data.error || 'Failed to delete course');
+      }
+    } catch (err: any) { setErrorMsg(err?.message || 'Network error'); }
   };
 
-  const openLessonManager = async (courseId: number) => {
+  const openLessonManager = async (courseId: string) => {
     if (managingLessons === courseId) { setManagingLessons(null); return; }
-    const res = await fetch(`/api/courses/${courseId}`, { headers });
-    const data = await res.json();
-    setCourseLessons(data.lessons || []);
-    setManagingLessons(courseId);
-    setShowAddLesson(false);
+    try {
+      const res = await fetch(`/api/courses/${courseId}`, { headers });
+      const data = await res.json();
+      setCourseLessons(data.lessons || []);
+      setManagingLessons(courseId);
+      setShowAddLesson(false);
+    } catch (err: any) { setErrorMsg(err?.message || 'Failed to load lessons'); }
   };
 
   const handleAddLesson = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!managingLessons) return;
-    const res = await fetch('/api/lessons', {
-      method: 'POST', headers,
-      body: JSON.stringify({ ...newLesson, course_id: managingLessons }),
-    });
-    if (res.ok) {
-      setNewLesson({ title: '', content: '', video_url: '', resource_url: '', resource_type: 'pdf', order_index: courseLessons.length + 1 });
-      setShowAddLesson(false);
-      openLessonManager(managingLessons);
-      fetchData();
-    }
+    setErrorMsg('');
+    try {
+      const res = await fetch('/api/lessons', {
+        method: 'POST', headers,
+        body: JSON.stringify({ ...newLesson, course_id: managingLessons }),
+      });
+      if (res.ok) {
+        setNewLesson({ title: '', content: '', video_url: '', resource_url: '', resource_type: 'pdf', order_index: courseLessons.length + 1 });
+        setShowAddLesson(false);
+        openLessonManager(managingLessons);
+        fetchData();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setErrorMsg(data.error || 'Failed to add lesson');
+      }
+    } catch (err: any) { setErrorMsg(err?.message || 'Network error'); }
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: 'video_url' | 'resource_url') => {
@@ -108,7 +135,7 @@ export default function AdminDashboard() {
     const formData = new FormData();
     formData.append('file', file);
     try {
-      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      const res = await fetch('/api/upload', { method: 'POST', body: formData, headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: 'Upload failed' }));
         setUploadError(err.error || `Upload failed (${res.status})`);
@@ -127,10 +154,16 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleDeleteLesson = async (lessonId: number) => {
+  const handleDeleteLesson = async (lessonId: string) => {
     if (!confirm('Delete this lesson?')) return;
-    const res = await fetch(`/api/lessons/${lessonId}`, { method: 'DELETE', headers });
-    if (res.ok && managingLessons) openLessonManager(managingLessons);
+    try {
+      const res = await fetch(`/api/lessons/${lessonId}`, { method: 'DELETE', headers });
+      if (res.ok && managingLessons) openLessonManager(managingLessons);
+      else if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setErrorMsg(data.error || 'Failed to delete lesson');
+      }
+    } catch (err: any) { setErrorMsg(err?.message || 'Network error'); }
   };
 
   if (loading) return <div className="text-center py-20">Loading Admin Panel...</div>;
@@ -149,6 +182,13 @@ export default function AdminDashboard() {
           <Plus size={20} /> Create New Course
         </button>
       </header>
+
+      {errorMsg && (
+        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl flex items-start justify-between gap-2">
+          <span className="text-sm">{errorMsg}</span>
+          <button onClick={() => setErrorMsg('')} className="text-red-400 hover:text-red-600"><X size={16} /></button>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -490,13 +530,20 @@ export default function AdminDashboard() {
                         <button
                           onClick={async () => {
                             if (!replyText.trim()) return;
-                            await fetch(`/api/lessons/${comment.lesson_id}/comments`, {
-                              method: 'POST', headers,
-                              body: JSON.stringify({ content: replyText, parent_id: comment.id }),
-                            });
-                            setReplyingTo(null);
-                            setReplyText('');
-                            fetchData();
+                            try {
+                              const res = await fetch(`/api/comments/${comment.id}/reply`, {
+                                method: 'POST', headers,
+                                body: JSON.stringify({ content: replyText }),
+                              });
+                              if (!res.ok) {
+                                const data = await res.json().catch(() => ({}));
+                                setErrorMsg(data.error || 'Failed to reply');
+                                return;
+                              }
+                              setReplyingTo(null);
+                              setReplyText('');
+                              fetchData();
+                            } catch (err: any) { setErrorMsg(err?.message || 'Network error'); }
                           }}
                           disabled={!replyText.trim()}
                           className="bg-[#0077FF] text-white px-3 rounded-lg text-xs font-bold hover:bg-[#0066DD] transition-colors disabled:opacity-40 self-end py-2"

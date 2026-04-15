@@ -4,21 +4,24 @@ import { useAuth } from '../AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, Download, FileText, ChevronRight, BookOpen, Video, Mail, ArrowLeft, Lock, Clock, Eye, FileDown, MessageCircle, Send, Reply, Trash2, Shield } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { Course, Lesson } from '../types';
+import { Course, Lesson, Comment } from '../types';
 
 export default function CourseView() {
   const { id } = useParams();
   const { token } = useAuth();
   const [course, setCourse] = useState<Course | null>(null);
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
-  const [completedLessons, setCompletedLessons] = useState<number[]>([]);
+  const [completedLessons, setCompletedLessons] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [showContact, setShowContact] = useState(false);
+  const [contactMsg, setContactMsg] = useState('');
+  const [contactStatus, setContactStatus] = useState('');
 
   // Engagement tracking per lesson
-  const [videoWatched, setVideoWatched] = useState<Record<number, boolean>>({});
-  const [resourceDownloaded, setResourceDownloaded] = useState<Record<number, boolean>>({});
-  const [timeSpent, setTimeSpent] = useState<Record<number, number>>({});
+  const [videoWatched, setVideoWatched] = useState<Record<string, boolean>>({});
+  const [resourceDownloaded, setResourceDownloaded] = useState<Record<string, boolean>>({});
+  const [timeSpent, setTimeSpent] = useState<Record<string, number>>({});
   const [timerActive, setTimerActive] = useState(false);
 
   const MIN_READ_SECONDS = 30; // minimum time to spend reading before marking complete
@@ -64,8 +67,8 @@ export default function CourseView() {
         if (courseData.lessons?.length > 0) {
           setActiveLesson(courseData.lessons[0]);
         }
-      } catch (err) {
-        console.error(err);
+      } catch (err: any) {
+        setError(err?.message || 'Failed to load course');
       } finally {
         setLoading(false);
       }
@@ -73,16 +76,43 @@ export default function CourseView() {
     fetchData();
   }, [id, token]);
 
-  const markComplete = async (lessonId: number) => {
+  const markComplete = async (lessonId: string) => {
     try {
-      await fetch('/api/progress', {
+      const res = await fetch('/api/progress', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ lesson_id: lessonId }),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || 'Failed to save progress');
+        return;
+      }
       setCompletedLessons(prev => [...prev, lessonId]);
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      setError(err?.message || 'Failed to save progress');
+    }
+  };
+
+  const sendContactMessage = async () => {
+    if (!contactMsg.trim() || !course) return;
+    setContactStatus('sending');
+    try {
+      const res = await fetch(`/api/courses/${course.id}/contact`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ message: contactMsg }),
+      });
+      if (res.ok) {
+        setContactStatus('sent');
+        setContactMsg('');
+        setTimeout(() => setContactStatus(''), 3000);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setContactStatus(data.error || 'Failed to send');
+      }
+    } catch (err: any) {
+      setContactStatus(err?.message || 'Failed to send');
     }
   };
 
@@ -96,6 +126,12 @@ export default function CourseView() {
   };
 
   if (loading) return <div className="text-center py-20">Loading course content...</div>;
+  if (error) return (
+    <div className="text-center py-20">
+      <p className="text-red-500 mb-4">{error}</p>
+      <Link to="/dashboard" className="text-neutral-900 font-bold hover:underline">Back to Dashboard</Link>
+    </div>
+  );
   if (!course) return (
     <div className="text-center py-20">
       <p className="text-neutral-500 mb-4">Course not found.</p>
@@ -376,25 +412,39 @@ export default function CourseView() {
             )}
           </div>
 
-          {/* Contact Support */}
+          {/* Contact Instructor */}
           <div className="bg-neutral-900 text-white p-8 rounded-3xl shadow-xl">
             <h4 className="font-bold mb-2">Need Help?</h4>
-            <p className="text-neutral-200 text-sm mb-4">Our staff members are available for Q&A sessions every Friday.</p>
+            <p className="text-neutral-200 text-sm mb-4">
+              Send a private message to {course.created_by_name || 'the instructor'}.
+            </p>
             <button
               onClick={() => setShowContact(!showContact)}
               className="w-full bg-neutral-800 py-3 rounded-xl text-sm font-bold hover:bg-neutral-700 transition-colors"
             >
-              {showContact ? 'Hide Details' : 'Contact Support'}
+              {showContact ? 'Hide' : 'Contact Instructor'}
             </button>
             {showContact && (
-              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-4 space-y-3">
-                <a href="mailto:staff1@example.com" className="flex items-center gap-2 text-neutral-300 hover:text-white text-sm transition-colors">
-                  <Mail size={14} /> staff1@example.com
-                </a>
-                <a href="mailto:staff2@example.com" className="flex items-center gap-2 text-neutral-300 hover:text-white text-sm transition-colors">
-                  <Mail size={14} /> staff2@example.com
-                </a>
-                <p className="text-neutral-500 text-xs">Office hours: Friday 2PM - 5PM</p>
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-4 space-y-3 overflow-hidden">
+                <textarea
+                  value={contactMsg}
+                  onChange={e => setContactMsg(e.target.value)}
+                  placeholder="Type your question..."
+                  className="w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded-lg text-sm text-white placeholder-neutral-500 outline-none focus:ring-2 focus:ring-[#0077FF]/40 h-24 resize-none"
+                />
+                <button
+                  onClick={sendContactMessage}
+                  disabled={!contactMsg.trim() || contactStatus === 'sending'}
+                  className="w-full bg-[#0077FF] py-2 rounded-lg text-sm font-bold hover:bg-[#0066DD] transition-colors disabled:opacity-40 flex items-center justify-center gap-2"
+                >
+                  <Mail size={14} /> {contactStatus === 'sending' ? 'Sending...' : 'Send Message'}
+                </button>
+                {contactStatus === 'sent' && (
+                  <p className="text-green-400 text-xs text-center">Message sent! The instructor will see it as a doubt.</p>
+                )}
+                {contactStatus && contactStatus !== 'sending' && contactStatus !== 'sent' && (
+                  <p className="text-red-400 text-xs text-center">{contactStatus}</p>
+                )}
               </motion.div>
             )}
           </div>
@@ -404,37 +454,31 @@ export default function CourseView() {
   );
 }
 
-interface Comment {
-  id: number;
-  lesson_id: number;
-  user_id: number;
-  parent_id: number | null;
-  content: string;
-  created_at: string;
-  user_name: string;
-  user_role: string;
-  profile_pic: string | null;
-}
-
-function DoubtSection({ lessonId }: { lessonId: number }) {
+function DoubtSection({ lessonId }: { lessonId: string }) {
   const { token, user } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [replyTo, setReplyTo] = useState<Comment | null>(null);
   const [replyText, setReplyText] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const fetchComments = async () => {
     try {
       const res = await fetch(`/api/lessons/${lessonId}/comments`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) {
+        setError('Failed to load doubts');
+        return;
+      }
       setComments(await res.json());
-    } catch (e) { console.error(e); }
+      setError('');
+    } catch (e: any) { setError(e?.message || 'Network error'); }
   };
 
   useEffect(() => { fetchComments(); }, [lessonId]);
 
-  const postComment = async (content: string, parentId?: number) => {
+  const postComment = async (content: string, parentId?: string) => {
     if (!content.trim()) return;
     setLoading(true);
     try {
@@ -448,19 +492,25 @@ function DoubtSection({ lessonId }: { lessonId: number }) {
         setReplyTo(null);
         setReplyText('');
         fetchComments();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || 'Failed to post');
       }
-    } catch (e) { console.error(e); }
+    } catch (e: any) { setError(e?.message || 'Network error'); }
     setLoading(false);
   };
 
-  const deleteComment = async (id: number) => {
+  const deleteComment = async (id: string) => {
     if (!confirm('Delete this comment?')) return;
-    await fetch(`/api/comments/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
-    fetchComments();
+    try {
+      const res = await fetch(`/api/comments/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) fetchComments();
+      else setError('Failed to delete');
+    } catch (e: any) { setError(e?.message || 'Network error'); }
   };
 
   const topLevel = comments.filter(c => !c.parent_id);
-  const getReplies = (id: number) => comments.filter(c => c.parent_id === id);
+  const getReplies = (id: string) => comments.filter(c => c.parent_id === id);
 
   const roleBadge = (role: string) => {
     if (role === 'staff') return <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase rounded bg-[#0077FF]/20 text-[#0077FF]">Staff</span>;
@@ -484,6 +534,9 @@ function DoubtSection({ lessonId }: { lessonId: number }) {
         <MessageCircle size={20} className="text-[#0077FF]" /> Doubts & Discussion
         {topLevel.length > 0 && <span className="text-xs bg-neutral-100 text-neutral-500 px-2 py-0.5 rounded-full">{comments.length}</span>}
       </h3>
+      {error && (
+        <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg mb-4 border border-red-100">{error}</div>
+      )}
 
       {/* Post new doubt */}
       <div className="mb-6">

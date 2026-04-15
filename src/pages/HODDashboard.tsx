@@ -16,6 +16,7 @@ export default function HODDashboard() {
   const [showReport, setShowReport] = useState(false);
   const [reportType, setReportType] = useState<'staff' | 'students' | 'courses'>('staff');
   const [focusData, setFocusData] = useState<any[]>([]);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -28,13 +29,16 @@ export default function HODDashboard() {
           fetch('/api/analytics/summary', { headers }),
           fetch('/api/analytics/focus', { headers }),
         ]);
-        setStaff(await staffRes.json());
-        setStudents(await studentsRes.json());
-        setCourses(await coursesRes.json());
-        setSummary(await summaryRes.json());
-        setFocusData(await focusRes.json());
-      } catch (err) {
-        console.error(err);
+        if (!staffRes.ok || !studentsRes.ok || !coursesRes.ok || !summaryRes.ok || !focusRes.ok) {
+          setError('Failed to load some analytics data');
+        }
+        setStaff(staffRes.ok ? await staffRes.json() : []);
+        setStudents(studentsRes.ok ? await studentsRes.json() : []);
+        setCourses(coursesRes.ok ? await coursesRes.json() : []);
+        setSummary(summaryRes.ok ? await summaryRes.json() : {});
+        setFocusData(focusRes.ok ? await focusRes.json() : []);
+      } catch (err: any) {
+        setError(err?.message || 'Network error');
       } finally {
         setLoading(false);
       }
@@ -67,6 +71,10 @@ export default function HODDashboard() {
           </div>
         </div>
       </header>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl text-sm">{error}</div>
+      )}
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
         <div onClick={() => openReport('students')} className="cursor-pointer">

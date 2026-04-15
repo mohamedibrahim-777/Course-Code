@@ -1,35 +1,57 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Book, Download, PlayCircle, TrendingUp, Timer, Coffee, Play, Pause, RotateCcw, Zap } from 'lucide-react';
+import { Book, Download, PlayCircle, TrendingUp, Timer, Coffee, Play, Pause, RotateCcw, Zap, Plus, Check, BookOpen } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Course } from '../types';
 
 export default function StudentDashboard() {
   const { user, token } = useAuth();
-  const [courses, setCourses] = useState<Course[]>([]);
+  const [enrolledCourses, setEnrolledCourses] = useState<Course[]>([]);
+  const [availableCourses, setAvailableCourses] = useState<Course[]>([]);
   const [progress, setProgress] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [tab, setTab] = useState<'enrolled' | 'browse'>('enrolled');
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [coursesRes, progressRes] = await Promise.all([
-          fetch('/api/courses', { headers: { Authorization: `Bearer ${token}` } }),
-          fetch('/api/progress', { headers: { Authorization: `Bearer ${token}` } })
-        ]);
-        const coursesData = await coursesRes.json();
-        const progressData = await progressRes.json();
-        setCourses(coursesData);
-        setProgress(progressData);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
+  const fetchData = useCallback(async () => {
+    try {
+      const [enrolledRes, browseRes, progressRes] = await Promise.all([
+        fetch('/api/courses?filter=enrolled', { headers: { Authorization: `Bearer ${token}` } }),
+        fetch('/api/courses?filter=browse', { headers: { Authorization: `Bearer ${token}` } }),
+        fetch('/api/progress', { headers: { Authorization: `Bearer ${token}` } })
+      ]);
+      if (!enrolledRes.ok || !browseRes.ok || !progressRes.ok) {
+        setError('Failed to load dashboard');
+        return;
       }
-    };
-    fetchData();
+      setEnrolledCourses(await enrolledRes.json());
+      setAvailableCourses(await browseRes.json());
+      setProgress(await progressRes.json());
+    } catch (err: any) {
+      setError(err?.message || 'Network error');
+    } finally {
+      setLoading(false);
+    }
   }, [token]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  const enroll = async (courseId: string) => {
+    try {
+      const res = await fetch(`/api/courses/${courseId}/enroll`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) fetchData();
+      else {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || 'Failed to enroll');
+      }
+    } catch (err: any) { setError(err?.message || 'Network error'); }
+  };
+
+  const courses = tab === 'enrolled' ? enrolledCourses : availableCourses;
 
   if (loading) return <div className="text-center py-20">Loading your learning path...</div>;
 
@@ -53,19 +75,47 @@ export default function StudentDashboard() {
         </div>
       </header>
 
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl text-sm">{error}</div>
+      )}
+
       <section>
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-neutral-900 flex items-center gap-2">
-            <Book className="text-neutral-900" size={24} /> Available Courses
-          </h2>
-          <span className="text-sm text-neutral-500">{courses.length} Courses found</span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setTab('enrolled')}
+              className={`px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition-colors ${
+                tab === 'enrolled' ? 'bg-neutral-900 text-white' : 'bg-white text-neutral-600 border border-neutral-200 hover:bg-neutral-50'
+              }`}
+            >
+              <BookOpen size={16} /> My Courses ({enrolledCourses.length})
+            </button>
+            <button
+              onClick={() => setTab('browse')}
+              className={`px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition-colors ${
+                tab === 'browse' ? 'bg-neutral-900 text-white' : 'bg-white text-neutral-600 border border-neutral-200 hover:bg-neutral-50'
+              }`}
+            >
+              <Book size={16} /> Browse ({availableCourses.length})
+            </button>
+          </div>
+          <span className="text-sm text-neutral-500">{courses.length} Courses</span>
         </div>
 
         {courses.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-2xl border border-neutral-100">
             <Book className="mx-auto text-neutral-300 mb-4" size={48} />
-            <h3 className="text-lg font-bold text-neutral-700 mb-2">No courses available yet</h3>
-            <p className="text-neutral-400">Check back soon - our staff is preparing great content for you!</p>
+            <h3 className="text-lg font-bold text-neutral-700 mb-2">
+              {tab === 'enrolled' ? 'No enrolled courses yet' : 'No courses available'}
+            </h3>
+            <p className="text-neutral-400">
+              {tab === 'enrolled' ? 'Browse the catalog and enroll in your first course.' : 'Check back soon - our staff is preparing great content!'}
+            </p>
+            {tab === 'enrolled' && availableCourses.length > 0 && (
+              <button onClick={() => setTab('browse')} className="mt-4 text-[#0077FF] font-bold text-sm hover:underline">
+                Browse Catalog →
+              </button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -74,7 +124,7 @@ export default function StudentDashboard() {
                 key={course.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.1 }}
+                transition={{ delay: Math.min(idx * 0.05, 0.3) }}
                 className="card-hover bg-white rounded-2xl shadow-sm border border-neutral-100 overflow-hidden group"
               >
                 <div className="h-40 bg-gradient-to-br from-neutral-600 to-neutral-900 relative overflow-hidden flex items-center justify-center">
@@ -86,14 +136,26 @@ export default function StudentDashboard() {
                 <div className="p-6">
                   <h3 className="text-lg font-bold text-neutral-900 mb-2">{course.title}</h3>
                   <p className="text-neutral-500 text-sm line-clamp-2 mb-4">{course.description}</p>
+                  {course.created_by_name && (
+                    <p className="text-xs text-neutral-400 mb-3">By {course.created_by_name}</p>
+                  )}
                   <div className="flex items-center justify-between pt-4 border-t border-neutral-50">
                     <span className="text-xs font-semibold text-neutral-400 uppercase tracking-widest">{course.language}</span>
-                    <Link
-                      to={`/course/${course.id}`}
-                      className="text-neutral-900 font-bold text-sm flex items-center gap-1 group-hover:gap-2 transition-all"
-                    >
-                      Start Learning <PlayCircle size={16} />
-                    </Link>
+                    {tab === 'browse' ? (
+                      <button
+                        onClick={() => enroll(course.id)}
+                        className="bg-[#0077FF] text-white px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1 hover:bg-[#0066DD] transition-colors"
+                      >
+                        <Plus size={14} /> Enroll
+                      </button>
+                    ) : (
+                      <Link
+                        to={`/course/${course.id}`}
+                        className="text-neutral-900 font-bold text-sm flex items-center gap-1 group-hover:gap-2 transition-all"
+                      >
+                        Start Learning <PlayCircle size={16} />
+                      </Link>
+                    )}
                   </div>
                 </div>
               </motion.div>
@@ -106,13 +168,13 @@ export default function StudentDashboard() {
       <FocusMode />
 
       {/* Downloads Section */}
-      {courses.length > 0 && (
+      {enrolledCourses.length > 0 && (
         <section className="bg-neutral-900 rounded-3xl p-8 text-white relative overflow-hidden">
           <div className="relative z-10">
             <h2 className="text-2xl font-bold mb-4">Download Center</h2>
             <p className="text-neutral-200 mb-6">Access all your course materials, PDFs, and practice sheets.</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {courses.map(course => (
+              {enrolledCourses.map(course => (
                 <Link
                   key={course.id}
                   to={`/course/${course.id}`}

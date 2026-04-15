@@ -1,5 +1,5 @@
 export interface User {
-  id: number;
+  id: string;
   name: string;
   email: string;
   role: 'hod' | 'staff' | 'student';
@@ -8,19 +8,21 @@ export interface User {
 }
 
 export interface Course {
-  id: number;
+  id: string;
   title: string;
   description: string;
   language: string;
   level: 'beginner' | 'intermediate' | 'advanced';
   thumbnail?: string;
-  created_by: number;
+  created_by: string;
+  created_by_name?: string;
+  enrolled?: boolean;
   lessons?: Lesson[];
 }
 
 export interface Lesson {
-  id: number;
-  course_id: number;
+  id: string;
+  course_id: string;
   title: string;
   content: string;
   video_url?: string;
@@ -30,5 +32,17 @@ export interface Lesson {
 }
 
 export interface Progress {
-  lesson_id: number;
+  lesson_id: string;
+}
+
+export interface Comment {
+  id: string;
+  lesson_id: string;
+  user_id: string;
+  parent_id: string | null;
+  content: string;
+  created_at: string;
+  user_name: string;
+  user_role: string;
+  profile_pic: string | null;
 }
