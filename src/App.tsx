@@ -25,6 +25,7 @@ import LoadingScreen from './components/LoadingScreen';
 import PageLoader from './components/PageLoader';
 import AnimatedBackground from './components/AnimatedBackground';
 import ClickSpark from './components/ClickSpark';
+import Silk from './components/Silk';
 
 const PageWrapper = ({ children }: { children: React.ReactNode }) => (
   <motion.div
@@ -69,6 +70,15 @@ const AppContent = () => {
 
   return (
     <div className={`${theme === 'dark' ? 'dark-bg' : 'light-bg'} min-h-screen font-sans flex flex-col relative`}>
+      <div className="fixed inset-0 z-0 pointer-events-none opacity-60">
+        <Silk
+          speed={5}
+          scale={1}
+          color={theme === 'dark' ? '#1a2540' : '#7B7481'}
+          noiseIntensity={1.5}
+          rotation={0}
+        />
+      </div>
       <ClickSpark
         sparkColor={theme === 'dark' ? '#ffffff' : '#0077FF'}
         sparkSize={10}
@@ -76,6 +86,7 @@ const AppContent = () => {
         sparkCount={10}
         duration={500}
       />
+      <div className="relative z-10 flex flex-col flex-1">
       <Navbar />
       <AnimatePresence>{pageLoading && <PageLoader />}</AnimatePresence>
       <main className="container mx-auto px-4 py-8 flex-1">
@@ -99,6 +110,7 @@ const AppContent = () => {
         </AnimatePresence>
       </main>
       <Footer />
+      </div>
     </div>
   );
 };
