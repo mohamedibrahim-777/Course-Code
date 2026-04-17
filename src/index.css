@@ -5,6 +5,13 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* View Transition for animated theme toggler */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
 @theme {
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
 }
@@ -17,7 +24,7 @@ body {
   font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: #f8fafc;
+  background: #ffffff;
   transition: background 0.3s ease;
 }
 
@@ -27,9 +34,9 @@ body[data-theme="dark"] {
 
 /* Smooth scrollbar — light */
 ::-webkit-scrollbar { width: 8px; }
-::-webkit-scrollbar-track { background: #f1f5f9; }
-::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.12); border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.25); }
+::-webkit-scrollbar-track { background: #f8f9ff; }
+::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.15); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(99, 102, 241, 0.3); }
 
 /* Smooth scrollbar — dark */
 body[data-theme="dark"]::-webkit-scrollbar-track { background: #0a0a1a; }
@@ -108,16 +115,16 @@ button[class*="green"]:hover, button[class*="green"]:active {
 
 /* ── Light theme variables ── */
 .light-bg {
-  --glass-bg: rgba(255, 255, 255, 0.97);
-  --glass-bg-subtle: #f5f7fa;
-  --glass-border: rgba(0, 0, 0, 0.06);
-  --glass-border-subtle: rgba(0, 0, 0, 0.04);
-  --glass-input-bg: #f8f9fb;
-  --glass-input-border: rgba(0, 0, 0, 0.1);
-  --glass-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.04);
-  --glass-shadow-lg: 0 2px 8px rgba(0, 0, 0, 0.08), 0 8px 28px rgba(0, 0, 0, 0.06);
-  --text-placeholder: rgba(0, 0, 0, 0.4);
-  color: #171717;
+  --glass-bg: rgba(238, 242, 255, 0.55);
+  --glass-bg-subtle: rgba(238, 242, 255, 0.4);
+  --glass-border: rgba(99, 102, 241, 0.1);
+  --glass-border-subtle: rgba(99, 102, 241, 0.06);
+  --glass-input-bg: rgba(248, 250, 255, 0.8);
+  --glass-input-border: rgba(99, 102, 241, 0.12);
+  --glass-shadow: 0 1px 4px rgba(99, 102, 241, 0.08), 0 4px 16px rgba(99, 102, 241, 0.04);
+  --glass-shadow-lg: 0 2px 8px rgba(99, 102, 241, 0.1), 0 8px 28px rgba(99, 102, 241, 0.06);
+  --text-placeholder: rgba(0, 0, 0, 0.35);
+  color: #1a1a2e;
 }
 
 /* ── Dark theme variables ── */
@@ -141,22 +148,23 @@ button[class*="green"]:hover, button[class*="green"]:active {
 .light-bg .bg-white,
 .light-bg .bg-white\/80,
 .light-bg .bg-white\/95 {
-  background: rgba(255, 255, 255, 0.97) !important;
+  background: rgba(238, 242, 255, 0.5) !important;
+  backdrop-filter: blur(12px) !important;
   border-color: var(--glass-border) !important;
   box-shadow: var(--glass-shadow) !important;
 }
 
 .light-bg .bg-neutral-50 {
-  background: #f5f7fa !important;
+  background: rgba(238, 242, 255, 0.35) !important;
   border-color: var(--glass-border-subtle) !important;
 }
 
 .light-bg .bg-neutral-100 {
-  background: #eff1f5 !important;
+  background: rgba(224, 231, 255, 0.4) !important;
 }
 
 .light-bg .bg-neutral-200 {
-  background: #e5e8ed !important;
+  background: rgba(214, 221, 255, 0.45) !important;
 }
 
 .light-bg input,
@@ -178,17 +186,17 @@ button[class*="green"]:hover, button[class*="green"]:active {
 
 .light-bg .shadow-sm  { box-shadow: var(--glass-shadow) !important; }
 .light-bg .shadow-lg  { box-shadow: var(--glass-shadow-lg) !important; }
-.light-bg .shadow-xl  { box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 8px 28px rgba(0, 0, 0, 0.06) !important; }
-.light-bg .shadow-2xl { box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1), 0 12px 40px rgba(0, 0, 0, 0.08) !important; }
+.light-bg .shadow-xl  { box-shadow: 0 4px 20px rgba(99, 102, 241, 0.1), 0 8px 28px rgba(99, 102, 241, 0.06) !important; }
+.light-bg .shadow-2xl { box-shadow: 0 8px 30px rgba(99, 102, 241, 0.12), 0 12px 40px rgba(99, 102, 241, 0.08) !important; }
 
 .light-bg .border-neutral-100 { border-color: var(--glass-border) !important; }
 .light-bg .border-neutral-200 { border-color: var(--glass-border-subtle) !important; }
 
-.light-bg .hover\:bg-neutral-50:hover  { background: #f0f2f5 !important; }
-.light-bg .hover\:bg-neutral-100:hover { background: #eaecf0 !important; }
+.light-bg .hover\:bg-neutral-50:hover  { background: rgba(224, 231, 255, 0.5) !important; }
+.light-bg .hover\:bg-neutral-100:hover { background: rgba(214, 221, 255, 0.55) !important; }
 
 .light-bg .card-hover:hover {
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 20px 40px rgba(0, 0, 0, 0.06) !important;
+  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.1), 0 20px 40px rgba(99, 102, 241, 0.06) !important;
 }
 
 /* ══════════════════════════════════
@@ -461,4 +469,9 @@ button[class*="green"]:hover, button[class*="green"]:active {
   html {
     @apply font-sans;
   }
+}
+
+::view-transition-old(root), ::view-transition-new(root) {
+    animation: none;
+    mix-blend-mode: normal;
 }

@@ -17,6 +17,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import HODDashboard from './pages/HODDashboard';
 import CourseView from './pages/CourseView';
 import Profile from './pages/Profile';
+import Settings from './pages/Settings';
 import Landing from './pages/Landing';
 
 // Components
@@ -106,6 +107,7 @@ const AppContent = () => {
 
             <Route path="/course/:id" element={user ? <PageWrapper><CourseView /></PageWrapper> : <Navigate to="/login" />} />
             <Route path="/profile" element={user ? <PageWrapper><Profile /></PageWrapper> : <Navigate to="/login" />} />
+            <Route path="/settings" element={user ? <PageWrapper><Settings /></PageWrapper> : <Navigate to="/login" />} />
           </Routes>
         </AnimatePresence>
       </main>
@@ -125,7 +127,7 @@ const Footer = () => {
       className={`backdrop-blur-2xl border-t py-8 mt-auto ${
         theme === 'dark'
           ? 'bg-[#0a0a1a]/50 border-white/8'
-          : 'bg-white/60 border-neutral-200'
+          : 'bg-indigo-50/50 border-indigo-100/40'
       }`}
     >
       <div className={`container mx-auto px-4 text-center text-sm ${

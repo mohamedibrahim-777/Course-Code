@@ -64,7 +64,7 @@ export default function HODDashboard() {
         </div>
         <div className="flex gap-2">
           <div className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest flex items-center gap-2 ${
-            isDark ? 'bg-white/10 text-white border border-white/10' : 'bg-neutral-900 text-white'
+            isDark ? 'bg-white/10 text-white border border-white/10' : 'bg-[#1a1a2e] text-white'
           }`}>
             <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
             Live Monitoring
@@ -91,7 +91,13 @@ export default function HODDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Staff Activity */}
-        <section className="lg:col-span-2 bg-white p-8 rounded-3xl shadow-sm border border-neutral-100">
+        <section className="lg:col-span-2 p-8 rounded-3xl border" style={{
+          background: isDark ? 'rgba(12, 12, 30, 0.97)' : 'rgba(238, 242, 255, 0.45)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(99, 102, 241, 0.1)',
+          boxShadow: isDark ? '0 2px 8px rgba(0, 0, 0, 0.3)' : '0 1px 4px rgba(99, 102, 241, 0.08), 0 4px 16px rgba(99, 102, 241, 0.04)',
+        }}>
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-xl font-bold text-neutral-900 flex items-center gap-2">
               <TrendingUp className="text-neutral-900" size={24} /> Staff Performance
@@ -159,7 +165,13 @@ export default function HODDashboard() {
             <div className="absolute bottom-0 right-0 w-32 h-32 bg-[#0077FF]/20 rounded-full blur-3xl" />
           </div>
 
-          <div className="bg-white p-8 rounded-3xl shadow-sm border border-neutral-100">
+          <div className="p-8 rounded-3xl border" style={{
+            background: isDark ? 'rgba(12, 12, 30, 0.97)' : 'rgba(238, 242, 255, 0.45)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(99, 102, 241, 0.1)',
+            boxShadow: isDark ? '0 2px 8px rgba(0, 0, 0, 0.3)' : '0 1px 4px rgba(99, 102, 241, 0.08), 0 4px 16px rgba(99, 102, 241, 0.04)',
+          }}>
             <h3 className="text-lg font-bold text-neutral-900 mb-4 flex items-center gap-2">
               <PieChart size={20} className="text-neutral-900" /> Courses by Language
             </h3>
@@ -182,7 +194,13 @@ export default function HODDashboard() {
       </div>
 
       {/* Student Focus Tracker */}
-      <section className="bg-white p-8 rounded-3xl shadow-sm border border-neutral-100">
+      <section className="p-8 rounded-3xl border" style={{
+        background: isDark ? 'rgba(12, 12, 30, 0.97)' : 'rgba(238, 242, 255, 0.45)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(99, 102, 241, 0.1)',
+        boxShadow: isDark ? '0 2px 8px rgba(0, 0, 0, 0.3)' : '0 1px 4px rgba(99, 102, 241, 0.08), 0 4px 16px rgba(99, 102, 241, 0.04)',
+      }}>
         <h2 className="text-xl font-bold text-neutral-900 mb-6 flex items-center gap-2">
           <Timer className="text-[#0077FF]" size={24} /> Student Focus Tracker
         </h2>
@@ -273,13 +291,13 @@ export default function HODDashboard() {
               transition={{ type: 'spring', stiffness: 400, damping: 30 }}
               className="relative z-10 w-full max-w-2xl p-8 rounded-3xl"
               style={{
-                background: isDark ? 'rgba(20, 20, 50, 0.55)' : 'rgba(255, 255, 255, 0.45)',
+                background: isDark ? 'rgba(20, 20, 50, 0.55)' : 'rgba(238, 242, 255, 0.6)',
                 backdropFilter: 'blur(40px) saturate(1.2)',
                 WebkitBackdropFilter: 'blur(40px) saturate(1.2)',
-                border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(255, 255, 255, 0.6)',
+                border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(99, 102, 241, 0.15)',
                 boxShadow: isDark
                   ? '0 8px 32px rgba(0, 0, 0, 0.4)'
-                  : '0 8px 32px rgba(0, 0, 0, 0.08)',
+                  : '0 8px 32px rgba(99, 102, 241, 0.1)',
               }}
               onClick={e => e.stopPropagation()}
             >
@@ -293,8 +311,8 @@ export default function HODDashboard() {
                   {staff.map(s => (
                     <div key={s.id} className="p-5 rounded-2xl flex items-center justify-between"
                       style={{
-                        background: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(255, 255, 255, 0.4)',
-                        border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(255, 255, 255, 0.5)',
+                        background: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(238, 242, 255, 0.5)',
+                        border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(99, 102, 241, 0.1)',
                       }}
                     >
                       <div>
@@ -346,8 +364,8 @@ export default function HODDashboard() {
                   {courses.map((c: any) => (
                     <div key={c.id} className="p-5 rounded-2xl"
                       style={{
-                        background: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(255, 255, 255, 0.4)',
-                        border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(255, 255, 255, 0.5)',
+                        background: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(238, 242, 255, 0.5)',
+                        border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(99, 102, 241, 0.1)',
                       }}
                     >
                       <div className="flex items-center justify-between">
@@ -381,11 +399,13 @@ function StatCard({ icon, label, value, color = '#0077FF', isDark = false }: any
       transition={{ type: 'spring', stiffness: 400, damping: 20 }}
       className="p-6 rounded-2xl cursor-pointer relative overflow-hidden"
       style={{
-        background: isDark ? 'rgba(12, 12, 30, 0.97)' : 'rgba(255, 255, 255, 0.97)',
-        border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(0, 0, 0, 0.06)',
+        background: isDark ? 'rgba(12, 12, 30, 0.97)' : 'rgba(238, 242, 255, 0.45)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(99, 102, 241, 0.1)',
         boxShadow: isDark
           ? '0 2px 8px rgba(0, 0, 0, 0.3)'
-          : '0 1px 3px rgba(0, 0, 0, 0.05), 0 4px 16px rgba(0, 0, 0, 0.03)',
+          : '0 1px 4px rgba(99, 102, 241, 0.08), 0 4px 16px rgba(99, 102, 241, 0.04)',
       }}
     >
       <div className="mb-3" style={{ color: isDark ? '#e0e0e8' : color }}>{icon}</div>

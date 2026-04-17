@@ -631,13 +631,13 @@ function Modal({ show, onClose, title, children }: { show: boolean; onClose: () 
         transition={{ type: 'spring', stiffness: 400, damping: 30 }}
         className="relative z-10 w-full max-w-md p-8 rounded-3xl"
         style={{
-          background: isDark ? 'rgba(20, 20, 50, 0.55)' : 'rgba(255, 255, 255, 0.45)',
+          background: isDark ? 'rgba(20, 20, 50, 0.55)' : 'rgba(238, 242, 255, 0.6)',
           backdropFilter: 'blur(40px) saturate(1.2)',
           WebkitBackdropFilter: 'blur(40px) saturate(1.2)',
-          border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(255, 255, 255, 0.6)',
+          border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(99, 102, 241, 0.15)',
           boxShadow: isDark
             ? '0 8px 32px rgba(0, 0, 0, 0.4)'
-            : '0 8px 32px rgba(0, 0, 0, 0.08)',
+            : '0 8px 32px rgba(99, 102, 241, 0.1)',
         }}
         onClick={e => e.stopPropagation()}
       >

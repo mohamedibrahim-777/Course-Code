@@ -1,28 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../AuthContext';
+import { useTheme } from '../ThemeContext';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { User, Mail, Camera, Save, Shield, Info, Lock, Eye, EyeOff, Trash2 } from 'lucide-react';
+import { User, Mail, Camera, Save, Info, Trash2, Settings } from 'lucide-react';
+
 
 export default function Profile() {
   const { user, token, login } = useAuth();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({ name: '', bio: '', profile_pic: '' });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const fileInputRef = React.useRef<HTMLInputElement>(null);
-
-  // Password change
-  const [showPasswordForm, setShowPasswordForm] = useState(false);
-  const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
-  const [passwordMsg, setPasswordMsg] = useState('');
-  const [showCurrent, setShowCurrent] = useState(false);
-  const [showNew, setShowNew] = useState(false);
-
-  // Email change
-  const [showEmailForm, setShowEmailForm] = useState(false);
-  const [emailStep, setEmailStep] = useState<1 | 2>(1);
-  const [newEmail, setNewEmail] = useState('');
-  const [emailOtp, setEmailOtp] = useState('');
-  const [emailMsg, setEmailMsg] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -51,78 +43,6 @@ export default function Profile() {
     }
   };
 
-  const handlePasswordChange = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setPasswordMsg('');
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      setPasswordMsg('Passwords do not match');
-      return;
-    }
-    if (passwordData.newPassword.length < 4) {
-      setPasswordMsg('Password must be at least 4 characters');
-      return;
-    }
-    try {
-      const res = await fetch('/api/auth/change-password', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ currentPassword: passwordData.currentPassword, newPassword: passwordData.newPassword }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setPasswordMsg('Password changed successfully!');
-        setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-        setShowPasswordForm(false);
-      } else {
-        setPasswordMsg(data.error || 'Failed to change password');
-      }
-    } catch (err) {
-      setPasswordMsg('Failed to change password');
-    }
-  };
-
-  const requestEmailChange = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setEmailMsg('');
-    try {
-      const res = await fetch('/api/auth/change-email-request', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ newEmail }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setEmailStep(2);
-        setEmailMsg('OTP sent! Check the server console.');
-      } else {
-        setEmailMsg(data.error || 'Failed to send OTP');
-      }
-    } catch (err) { setEmailMsg('Network error'); }
-  };
-
-  const verifyEmailChange = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setEmailMsg('');
-    try {
-      const res = await fetch('/api/auth/change-email', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ newEmail, otp: emailOtp }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setEmailMsg('Email updated successfully!');
-        login(data.token, data.user);
-        setShowEmailForm(false);
-        setEmailStep(1);
-        setNewEmail('');
-        setEmailOtp('');
-      } else {
-        setEmailMsg(data.error || 'Failed');
-      }
-    } catch (err) { setEmailMsg('Network error'); }
-  };
-
   const avatarUrl = formData.profile_pic || '';
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -137,9 +57,22 @@ export default function Profile() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <header className="mb-12 text-center">
-        <h1 className="text-4xl font-bold text-neutral-900">My Profile</h1>
-        <p className="text-neutral-500 mt-2">Manage your personal information and account settings.</p>
+      <header className="mb-12 flex items-center justify-between">
+        <div>
+          <h1 className="text-4xl font-bold text-neutral-900">My Profile</h1>
+          <p className="text-neutral-500 mt-2">Manage your personal information.</p>
+        </div>
+        <button
+          onClick={() => navigate('/settings')}
+          className={`p-3 rounded-2xl transition-colors ${
+            isDark
+              ? 'text-neutral-400 hover:text-white hover:bg-white/10'
+              : 'text-neutral-500 hover:text-neutral-900 hover:bg-indigo-50'
+          }`}
+          title="Account Settings"
+        >
+          <Settings size={22} />
+        </button>
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -182,21 +115,19 @@ export default function Profile() {
             <h3 className="text-xl font-bold text-neutral-900">{user?.name}</h3>
             <p className="text-sm text-neutral-400 uppercase tracking-widest font-bold mt-1">{user?.role}</p>
             <p className="text-xs text-neutral-500 mt-2">{user?.email}</p>
-          </div>
 
-          <div className="bg-neutral-100 p-6 rounded-3xl border border-neutral-200">
-            <h4 className="font-bold text-neutral-900 mb-2 flex items-center gap-2">
-              <Shield size={18} /> Account Security
-            </h4>
-            <p className="text-xs text-neutral-700 leading-relaxed mb-3">
-              Your account is protected. You can change your password below.
-            </p>
-            <button
-              onClick={() => setShowPasswordForm(!showPasswordForm)}
-              className="btn-glow w-full bg-[#0077FF] text-white py-2 rounded-xl text-sm font-bold hover:bg-[#0066DD] transition-colors flex items-center justify-center gap-2"
-            >
-              <Lock size={14} /> {showPasswordForm ? 'Hide' : 'Change Password'}
-            </button>
+            <div className="mt-6 pt-6 border-t border-neutral-100">
+              <button
+                onClick={() => navigate('/settings')}
+                className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+                  isDark
+                    ? 'text-neutral-400 hover:text-white hover:bg-white/10'
+                    : 'text-neutral-500 hover:text-neutral-900 hover:bg-indigo-50'
+                }`}
+              >
+                <Settings size={16} /> Account Settings
+              </button>
+            </div>
           </div>
         </div>
 
@@ -227,11 +158,7 @@ export default function Profile() {
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
                     <input type="email" disabled value={user?.email}
-                      className="w-full pl-10 pr-24 py-3 bg-neutral-100 border border-neutral-200 rounded-xl text-neutral-500 cursor-not-allowed" />
-                    <button type="button" onClick={() => { setShowEmailForm(!showEmailForm); setEmailMsg(''); setEmailStep(1); }}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-bold text-[#0077FF] hover:text-[#0066DD] px-2 py-1">
-                      Change
-                    </button>
+                      className="w-full pl-10 pr-4 py-3 bg-neutral-100 border border-neutral-200 rounded-xl text-neutral-500 cursor-not-allowed" />
                   </div>
                 </div>
               </div>
@@ -254,113 +181,6 @@ export default function Profile() {
               </div>
             </form>
           </motion.div>
-
-          {/* Email Change Form */}
-          {showEmailForm && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-              className="bg-white p-8 rounded-3xl shadow-sm border border-neutral-100"
-            >
-              <h3 className="text-xl font-bold text-neutral-900 mb-6 flex items-center gap-2">
-                <Mail className="text-neutral-900" size={20} /> Change Email Address
-              </h3>
-              {emailMsg && (
-                <div className={`p-4 rounded-xl text-sm mb-6 font-medium ${emailMsg.includes('success') || emailMsg.includes('sent') ? 'bg-neutral-100 text-neutral-900' : 'bg-red-50 text-red-600'}`}>
-                  {emailMsg}
-                </div>
-              )}
-              {emailStep === 1 ? (
-                <form onSubmit={requestEmailChange} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-neutral-700 mb-1">New Email</label>
-                    <input type="email" required value={newEmail} onChange={e => setNewEmail(e.target.value)}
-                      className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl outline-none focus:ring-2 focus:ring-neutral-800"
-                      placeholder="new@example.com" />
-                  </div>
-                  <button type="submit" className="btn-glow bg-[#0077FF] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#0066DD] transition-all">
-                    Send OTP
-                  </button>
-                </form>
-              ) : (
-                <form onSubmit={verifyEmailChange} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-neutral-700 mb-1">Enter 6-Digit OTP</label>
-                    <input type="text" required maxLength={6} value={emailOtp}
-                      onChange={e => setEmailOtp(e.target.value.replace(/\D/g, ''))}
-                      className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl outline-none focus:ring-2 focus:ring-neutral-800 tracking-[0.5em] font-mono text-center text-lg"
-                      placeholder="000000" />
-                  </div>
-                  <div className="flex gap-2">
-                    <button type="button" onClick={() => setEmailStep(1)}
-                      className="flex-1 py-3 bg-neutral-100 text-neutral-600 font-bold rounded-xl hover:bg-neutral-200 transition-colors">
-                      Back
-                    </button>
-                    <button type="submit" className="btn-glow flex-1 py-3 bg-[#0077FF] text-white font-bold rounded-xl hover:bg-[#0066DD] transition-all">
-                      Verify & Update
-                    </button>
-                  </div>
-                </form>
-              )}
-            </motion.div>
-          )}
-
-          {/* Password Change Form */}
-          {showPasswordForm && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-              className="bg-white p-8 rounded-3xl shadow-sm border border-neutral-100"
-            >
-              <h3 className="text-xl font-bold text-neutral-900 mb-6 flex items-center gap-2">
-                <Lock className="text-neutral-900" size={20} /> Change Password
-              </h3>
-
-              {passwordMsg && (
-                <div className={`p-4 rounded-xl text-sm mb-6 font-medium ${passwordMsg.includes('success') ? 'bg-neutral-100 text-neutral-900' : 'bg-red-50 text-red-600'}`}>
-                  {passwordMsg}
-                </div>
-              )}
-
-              <form onSubmit={handlePasswordChange} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold text-neutral-700 mb-1">Current Password</label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
-                    <input type={showCurrent ? 'text' : 'password'} required value={passwordData.currentPassword}
-                      onChange={e => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
-                      className="w-full pl-10 pr-10 py-3 bg-neutral-50 border border-neutral-200 rounded-xl outline-none focus:ring-2 focus:ring-neutral-800" />
-                    <button type="button" onClick={() => setShowCurrent(!showCurrent)} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400">
-                      {showCurrent ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-neutral-700 mb-1">New Password</label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
-                    <input type={showNew ? 'text' : 'password'} required value={passwordData.newPassword}
-                      onChange={e => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                      className="w-full pl-10 pr-10 py-3 bg-neutral-50 border border-neutral-200 rounded-xl outline-none focus:ring-2 focus:ring-neutral-800" />
-                    <button type="button" onClick={() => setShowNew(!showNew)} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400">
-                      {showNew ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-neutral-700 mb-1">Confirm New Password</label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
-                    <input type="password" required value={passwordData.confirmPassword}
-                      onChange={e => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                      className="w-full pl-10 pr-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl outline-none focus:ring-2 focus:ring-neutral-800" />
-                  </div>
-                </div>
-                <button type="submit"
-                  className="btn-glow bg-[#0077FF] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#0066DD] transition-all flex items-center gap-2">
-                  <Save size={18} /> Update Password
-                </button>
-              </form>
-            </motion.div>
-          )}
         </div>
       </div>
     </div>
