@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../AuthContext';
 import { useTheme } from '../ThemeContext';
 import { useCachedData } from '../services/dataCache';
+import SkeletonFallback from '../components/SkeletonFallback';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Users, BookOpen, BarChart3, Trash2, Edit, X, FileText, Save, ChevronDown, ChevronUp, Upload, Timer, Coffee, Zap, MessageCircle, Send, Reply } from 'lucide-react';
 import { Course, Lesson } from '../types';
@@ -166,7 +167,7 @@ export default function AdminDashboard() {
     } catch (err: any) { setErrorMsg(err?.message || 'Network error'); }
   };
 
-  if (loading && !data) return <div className="text-center py-20">Loading Admin Panel...</div>;
+  if (loading && !data) return <SkeletonFallback />;
 
   return (
     <div className="space-y-8">

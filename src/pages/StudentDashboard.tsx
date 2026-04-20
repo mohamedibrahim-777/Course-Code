@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../AuthContext';
 import { useCachedData } from '../services/dataCache';
+import SkeletonFallback from '../components/SkeletonFallback';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Book, Download, PlayCircle, TrendingUp, Timer, Coffee, Play, Pause, RotateCcw, Zap, Plus, Check, BookOpen } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -49,7 +50,7 @@ export default function StudentDashboard() {
 
   const courses = tab === 'enrolled' ? enrolledCourses : availableCourses;
 
-  if (loading && !data) return <div className="text-center py-20">Loading your learning path...</div>;
+  if (loading && !data) return <SkeletonFallback />;
 
   return (
     <div className="space-y-8">

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from './types';
+import { prefetchDashboard } from './services/prefetch';
 
 interface AuthContextType {
   user: User | null;
@@ -20,8 +21,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const savedToken = localStorage.getItem('token');
     const savedUser = localStorage.getItem('user');
     if (savedToken && savedUser) {
+      const parsedUser = JSON.parse(savedUser) as User;
       setToken(savedToken);
-      setUser(JSON.parse(savedUser));
+      setUser(parsedUser);
+      // Warm the dashboard cache so navigating to /dashboard doesn't wait on the network.
+      prefetchDashboard(parsedUser.role, savedToken);
     }
     setLoading(false);
   }, []);
@@ -31,6 +35,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(newUser);
     localStorage.setItem('token', newToken);
     localStorage.setItem('user', JSON.stringify(newUser));
+    // Same warm-up at fresh-login time.
+    prefetchDashboard(newUser.role, newToken);
   };
 
   const logout = () => {

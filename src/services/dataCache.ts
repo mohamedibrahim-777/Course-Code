@@ -26,6 +26,10 @@ const notify = (key: string, value: any) => {
   listeners.get(key)?.forEach((fn) => fn(value));
 };
 
+// Public: write into the cache from the outside (e.g. a prefetch on login).
+// Subscribers re-render with the new value.
+export const setCached = (key: string, value: any) => notify(key, value);
+
 export const invalidate = (key?: string) => {
   if (key) {
     cache.delete(key);

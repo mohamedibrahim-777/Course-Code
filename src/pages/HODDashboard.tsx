@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '../AuthContext';
 import { useTheme } from '../ThemeContext';
 import { useCachedData } from '../services/dataCache';
+import SkeletonFallback from '../components/SkeletonFallback';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Users, BookOpen, Activity, ChevronRight, BarChart, PieChart, TrendingUp, X, Mail, Timer, Coffee, Zap } from 'lucide-react';
 
@@ -34,8 +35,8 @@ export default function HODDashboard() {
     [token]
   );
 
-  // Render cached data immediately if available; only block on first-ever load.
-  if (loading && !data) return <div className="text-center py-20">Loading HOD Analytics...</div>;
+  // Render cached data immediately; show shimmer (not blocking text) on first-ever load.
+  if (loading && !data) return <SkeletonFallback />;
   const staff = data?.staff ?? [];
   const students = data?.students ?? [];
   const courses = data?.courses ?? [];
