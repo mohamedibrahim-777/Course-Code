@@ -1,15 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../AuthContext';
 import { useTheme } from '../ThemeContext';
+import { useCachedData } from '../services/dataCache';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Users, BookOpen, BarChart3, Trash2, Edit, X, FileText, Save, ChevronDown, ChevronUp, Upload, Timer, Coffee, Zap, MessageCircle, Send, Reply } from 'lucide-react';
 import { Course, Lesson } from '../types';
 
 export default function AdminDashboard() {
   const { token } = useAuth();
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [students, setStudents] = useState<any[]>([]);
-  const [summary, setSummary] = useState<any>({});
   const [showAddCourse, setShowAddCourse] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [managingLessons, setManagingLessons] = useState<string | null>(null);
@@ -19,17 +17,15 @@ export default function AdminDashboard() {
   const [newLesson, setNewLesson] = useState({ title: '', content: '', video_url: '', resource_url: '', resource_type: 'pdf', order_index: 1 });
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [focusData, setFocusData] = useState<any[]>([]);
-  const [allComments, setAllComments] = useState<any[]>([]);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
 
-  const fetchData = async () => {
-    try {
+  const { data, loading, refresh } = useCachedData(
+    'admin-dashboard',
+    async () => {
       const [coursesRes, studentsRes, summaryRes, focusRes, commentsRes] = await Promise.all([
         fetch('/api/courses', { headers }),
         fetch('/api/analytics/students', { headers }),
@@ -37,19 +33,23 @@ export default function AdminDashboard() {
         fetch('/api/analytics/focus', { headers }),
         fetch('/api/comments/all', { headers }),
       ]);
-      setCourses(await coursesRes.json());
-      setStudents(await studentsRes.json());
-      setSummary(await summaryRes.json());
-      setFocusData(await focusRes.json());
-      setAllComments(await commentsRes.json());
-    } catch (err: any) {
-      setErrorMsg(err?.message || 'Failed to load dashboard');
-    } finally {
-      setLoading(false);
-    }
-  };
+      return {
+        courses: (await coursesRes.json()) as Course[],
+        students: await studentsRes.json(),
+        summary: await summaryRes.json(),
+        focusData: await focusRes.json(),
+        allComments: await commentsRes.json(),
+      };
+    },
+    [token]
+  );
 
-  useEffect(() => { fetchData(); }, [token]);
+  const fetchData = refresh;
+  const courses: Course[] = data?.courses ?? [];
+  const students: any[] = data?.students ?? [];
+  const summary: any = data?.summary ?? {};
+  const focusData: any[] = data?.focusData ?? [];
+  const allComments: any[] = data?.allComments ?? [];
 
   const handleAddCourse = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -166,7 +166,7 @@ export default function AdminDashboard() {
     } catch (err: any) { setErrorMsg(err?.message || 'Network error'); }
   };
 
-  if (loading) return <div className="text-center py-20">Loading Admin Panel...</div>;
+  if (loading && !data) return <div className="text-center py-20">Loading Admin Panel...</div>;
 
   return (
     <div className="space-y-8">

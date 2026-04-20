@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState } from 'react';
 import { useAuth } from '../AuthContext';
+import { useCachedData } from '../services/dataCache';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Book, Download, PlayCircle, TrendingUp, Timer, Coffee, Play, Pause, RotateCcw, Zap, Plus, Check, BookOpen } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -7,35 +8,30 @@ import { Course } from '../types';
 
 export default function StudentDashboard() {
   const { user, token } = useAuth();
-  const [enrolledCourses, setEnrolledCourses] = useState<Course[]>([]);
-  const [availableCourses, setAvailableCourses] = useState<Course[]>([]);
-  const [progress, setProgress] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [tab, setTab] = useState<'enrolled' | 'browse'>('enrolled');
 
-  const fetchData = useCallback(async () => {
-    try {
+  const { data, loading, refresh } = useCachedData(
+    'student-dashboard',
+    async () => {
       const [enrolledRes, browseRes, progressRes] = await Promise.all([
         fetch('/api/courses?filter=enrolled', { headers: { Authorization: `Bearer ${token}` } }),
         fetch('/api/courses?filter=browse', { headers: { Authorization: `Bearer ${token}` } }),
-        fetch('/api/progress', { headers: { Authorization: `Bearer ${token}` } })
+        fetch('/api/progress', { headers: { Authorization: `Bearer ${token}` } }),
       ]);
-      if (!enrolledRes.ok || !browseRes.ok || !progressRes.ok) {
-        setError('Failed to load dashboard');
-        return;
-      }
-      setEnrolledCourses(await enrolledRes.json());
-      setAvailableCourses(await browseRes.json());
-      setProgress(await progressRes.json());
-    } catch (err: any) {
-      setError(err?.message || 'Network error');
-    } finally {
-      setLoading(false);
-    }
-  }, [token]);
+      return {
+        enrolledCourses: (enrolledRes.ok ? await enrolledRes.json() : []) as Course[],
+        availableCourses: (browseRes.ok ? await browseRes.json() : []) as Course[],
+        progress: progressRes.ok ? await progressRes.json() : [],
+      };
+    },
+    [token]
+  );
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  const fetchData = refresh;
+  const enrolledCourses: Course[] = data?.enrolledCourses ?? [];
+  const availableCourses: Course[] = data?.availableCourses ?? [];
+  const progress: any[] = data?.progress ?? [];
 
   const enroll = async (courseId: string) => {
     try {
@@ -53,7 +49,7 @@ export default function StudentDashboard() {
 
   const courses = tab === 'enrolled' ? enrolledCourses : availableCourses;
 
-  if (loading) return <div className="text-center py-20">Loading your learning path...</div>;
+  if (loading && !data) return <div className="text-center py-20">Loading your learning path...</div>;
 
   return (
     <div className="space-y-8">

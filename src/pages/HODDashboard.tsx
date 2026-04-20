@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth } from '../AuthContext';
 import { useTheme } from '../ThemeContext';
+import { useCachedData } from '../services/dataCache';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Users, BookOpen, Activity, ChevronRight, BarChart, PieChart, TrendingUp, X, Mail, Timer, Coffee, Zap } from 'lucide-react';
 
@@ -8,45 +9,38 @@ export default function HODDashboard() {
   const { token } = useAuth();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
-  const [staff, setStaff] = useState<any[]>([]);
-  const [students, setStudents] = useState<any[]>([]);
-  const [courses, setCourses] = useState<any[]>([]);
-  const [summary, setSummary] = useState<any>({});
-  const [loading, setLoading] = useState(true);
   const [showReport, setShowReport] = useState(false);
   const [reportType, setReportType] = useState<'staff' | 'students' | 'courses'>('staff');
-  const [focusData, setFocusData] = useState<any[]>([]);
-  const [error, setError] = useState('');
 
-  useEffect(() => {
-    const fetchData = async () => {
+  const { data, loading, error } = useCachedData(
+    'hod-dashboard',
+    async () => {
       const headers = { Authorization: `Bearer ${token}` };
-      try {
-        const [staffRes, studentsRes, coursesRes, summaryRes, focusRes] = await Promise.all([
-          fetch('/api/analytics/staff', { headers }),
-          fetch('/api/analytics/students', { headers }),
-          fetch('/api/courses', { headers }),
-          fetch('/api/analytics/summary', { headers }),
-          fetch('/api/analytics/focus', { headers }),
-        ]);
-        if (!staffRes.ok || !studentsRes.ok || !coursesRes.ok || !summaryRes.ok || !focusRes.ok) {
-          setError('Failed to load some analytics data');
-        }
-        setStaff(staffRes.ok ? await staffRes.json() : []);
-        setStudents(studentsRes.ok ? await studentsRes.json() : []);
-        setCourses(coursesRes.ok ? await coursesRes.json() : []);
-        setSummary(summaryRes.ok ? await summaryRes.json() : {});
-        setFocusData(focusRes.ok ? await focusRes.json() : []);
-      } catch (err: any) {
-        setError(err?.message || 'Network error');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, [token]);
+      const [staffRes, studentsRes, coursesRes, summaryRes, focusRes] = await Promise.all([
+        fetch('/api/analytics/staff', { headers }),
+        fetch('/api/analytics/students', { headers }),
+        fetch('/api/courses', { headers }),
+        fetch('/api/analytics/summary', { headers }),
+        fetch('/api/analytics/focus', { headers }),
+      ]);
+      return {
+        staff: staffRes.ok ? await staffRes.json() : [],
+        students: studentsRes.ok ? await studentsRes.json() : [],
+        courses: coursesRes.ok ? await coursesRes.json() : [],
+        summary: summaryRes.ok ? await summaryRes.json() : {},
+        focusData: focusRes.ok ? await focusRes.json() : [],
+      };
+    },
+    [token]
+  );
 
-  if (loading) return <div className="text-center py-20">Loading HOD Analytics...</div>;
+  // Render cached data immediately if available; only block on first-ever load.
+  if (loading && !data) return <div className="text-center py-20">Loading HOD Analytics...</div>;
+  const staff = data?.staff ?? [];
+  const students = data?.students ?? [];
+  const courses = data?.courses ?? [];
+  const summary = data?.summary ?? {};
+  const focusData = data?.focusData ?? [];
 
   const openReport = (type: 'staff' | 'students' | 'courses') => {
     setReportType(type);
