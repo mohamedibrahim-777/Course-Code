@@ -6,8 +6,8 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './AuthContext';
 import { ThemeProvider, useTheme } from './ThemeContext';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import { motion } from 'framer-motion';
+import { lazy, Suspense } from 'react';
 
 // Pages — lazy-loaded so each route ships in its own chunk and the initial bundle stays small.
 const Login = lazy(() => import('./pages/Login'));
@@ -31,13 +31,12 @@ import ClickSpark from './components/ClickSpark';
 const Silk = lazy(() => import('./components/Silk'));
 const AnimatedBackground = lazy(() => import('./components/AnimatedBackground'));
 
+// Lightweight fade only — no Y translate (kills perceived snappiness on cached navigations).
 const PageWrapper = ({ children }: { children: React.ReactNode }) => (
   <motion.div
-    initial={{ opacity: 0, y: 12 }}
-    animate={{ opacity: 1, y: 0 }}
-    exit={{ opacity: 0 }}
-    transition={{ type: 'tween', ease: [0.25, 0.1, 0.25, 1], duration: 0.3 }}
-    style={{ willChange: 'opacity, transform' }}
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    transition={{ duration: 0.12 }}
   >
     {children}
   </motion.div>
@@ -46,29 +45,9 @@ const PageWrapper = ({ children }: { children: React.ReactNode }) => (
 const AppContent = () => {
   const { user, loading: authLoading } = useAuth();
   const { theme } = useTheme();
-  const [initialLoading, setInitialLoading] = useState(true);
-  const [pageLoading, setPageLoading] = useState(false);
   const location = useLocation();
-  const isFirstLoad = useRef(true);
 
-  // Initial app load
-  useEffect(() => {
-    const timer = setTimeout(() => setInitialLoading(false), 500);
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Show page loader on every route change (except first load)
-  useEffect(() => {
-    if (isFirstLoad.current) {
-      isFirstLoad.current = false;
-      return;
-    }
-    setPageLoading(true);
-    const timer = setTimeout(() => setPageLoading(false), 300);
-    return () => clearTimeout(timer);
-  }, [location.pathname]);
-
-  if (authLoading || initialLoading) {
+  if (authLoading) {
     return <LoadingScreen />;
   }
 
@@ -94,28 +73,25 @@ const AppContent = () => {
       />
       <div className="relative z-10 flex flex-col flex-1">
       <Navbar />
-      <AnimatePresence>{pageLoading && <PageLoader />}</AnimatePresence>
       <main className="container mx-auto px-4 py-8 flex-1">
         <Suspense fallback={<PageLoader />}>
-          <AnimatePresence mode="popLayout">
-            <Routes location={location} key={location.pathname}>
-              <Route path="/" element={<PageWrapper><Landing /></PageWrapper>} />
-              <Route path="/login" element={!user ? <PageWrapper><Login /></PageWrapper> : <Navigate to="/dashboard" />} />
-              <Route path="/register" element={!user ? <PageWrapper><Register /></PageWrapper> : <Navigate to="/dashboard" />} />
+          <Routes location={location}>
+            <Route path="/" element={<PageWrapper><Landing /></PageWrapper>} />
+            <Route path="/login" element={!user ? <PageWrapper><Login /></PageWrapper> : <Navigate to="/dashboard" />} />
+            <Route path="/register" element={!user ? <PageWrapper><Register /></PageWrapper> : <Navigate to="/dashboard" />} />
 
-              <Route path="/dashboard" element={
-                <PageWrapper>
-                  {user?.role === 'hod' ? <HODDashboard /> :
-                   user?.role === 'staff' ? <AdminDashboard /> :
-                   user ? <StudentDashboard /> : <Navigate to="/login" />}
-                </PageWrapper>
-              } />
+            <Route path="/dashboard" element={
+              <PageWrapper>
+                {user?.role === 'hod' ? <HODDashboard /> :
+                 user?.role === 'staff' ? <AdminDashboard /> :
+                 user ? <StudentDashboard /> : <Navigate to="/login" />}
+              </PageWrapper>
+            } />
 
-              <Route path="/course/:id" element={user ? <PageWrapper><CourseView /></PageWrapper> : <Navigate to="/login" />} />
-              <Route path="/profile" element={user ? <PageWrapper><Profile /></PageWrapper> : <Navigate to="/login" />} />
-              <Route path="/settings" element={user ? <PageWrapper><Settings /></PageWrapper> : <Navigate to="/login" />} />
-            </Routes>
-          </AnimatePresence>
+            <Route path="/course/:id" element={user ? <PageWrapper><CourseView /></PageWrapper> : <Navigate to="/login" />} />
+            <Route path="/profile" element={user ? <PageWrapper><Profile /></PageWrapper> : <Navigate to="/login" />} />
+            <Route path="/settings" element={user ? <PageWrapper><Settings /></PageWrapper> : <Navigate to="/login" />} />
+          </Routes>
         </Suspense>
       </main>
       <Footer />
