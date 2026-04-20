@@ -9,6 +9,17 @@ type Listener = (value: any) => void;
 const cache = new Map<string, any>();
 const listeners = new Map<string, Set<Listener>>();
 const inFlight = new Map<string, Promise<any>>();
+const fetchingListeners = new Set<(n: number) => void>();
+
+const broadcastFetching = () => fetchingListeners.forEach((fn) => fn(inFlight.size));
+
+export const subscribeFetching = (fn: (n: number) => void) => {
+  fetchingListeners.add(fn);
+  fn(inFlight.size);
+  return () => {
+    fetchingListeners.delete(fn);
+  };
+};
 
 const notify = (key: string, value: any) => {
   cache.set(key, value);
@@ -42,8 +53,12 @@ export function useCachedData<T>(
             notify(key, v);
             return v;
           })
-          .finally(() => inFlight.delete(key))
+          .finally(() => {
+            inFlight.delete(key);
+            broadcastFetching();
+          })
       );
+      broadcastFetching();
     }
     inFlight
       .get(key)!

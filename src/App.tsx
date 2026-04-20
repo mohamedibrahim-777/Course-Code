@@ -25,18 +25,20 @@ import Navbar from './components/Navbar';
 import LoadingScreen from './components/LoadingScreen';
 import PageLoader from './components/PageLoader';
 import ClickSpark from './components/ClickSpark';
+import TopProgressBar from './components/TopProgressBar';
 
 // Heavy decorative components — Three.js shader + animated bg are ~600KB combined.
 // Lazy-load so first paint isn't blocked; they fade in once loaded.
 const Silk = lazy(() => import('./components/Silk'));
 const AnimatedBackground = lazy(() => import('./components/AnimatedBackground'));
 
-// Lightweight fade only — no Y translate (kills perceived snappiness on cached navigations).
+// Smooth page enter: 220ms opacity + tiny 6px lift, ease-out feels snappy not laggy.
 const PageWrapper = ({ children }: { children: React.ReactNode }) => (
   <motion.div
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    transition={{ duration: 0.12 }}
+    initial={{ opacity: 0, y: 6 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+    style={{ willChange: 'opacity, transform' }}
   >
     {children}
   </motion.div>
@@ -72,6 +74,7 @@ const AppContent = () => {
         duration={500}
       />
       <div className="relative z-10 flex flex-col flex-1">
+      <TopProgressBar />
       <Navbar />
       <main className="container mx-auto px-4 py-8 flex-1">
         <Suspense fallback={<PageLoader />}>
