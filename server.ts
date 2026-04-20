@@ -151,6 +151,10 @@ app.use(
   cors({
     origin: (origin, cb) => {
       if (!origin) return cb(null, true);
+      // No whitelist configured → reflect any origin (suitable for same-origin apps).
+      // Browsers send an Origin header even for same-origin requests when assets use
+      // crossorigin attributes, so an empty whitelist must NOT be treated as deny-all.
+      if (corsOrigins.length === 0) return cb(null, true);
       if (corsOrigins.includes(origin)) return cb(null, true);
       cb(new Error(`CORS: origin not allowed: ${origin}`));
     },
