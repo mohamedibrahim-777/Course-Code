@@ -856,7 +856,17 @@ if (!IS_PROD) {
   app.listen(PORT, '0.0.0.0', () => console.log(`Server running on http://localhost:${PORT}`));
 } else {
   const distPath = path.join(process.cwd(), 'dist');
-  app.use(express.static(distPath));
+  app.use(
+    express.static(distPath, {
+      // Vite includes a content hash in /assets/* filenames, so they're safe to
+      // cache forever. index.html and the rest revalidate every request.
+      setHeaders: (res, filePath) => {
+        if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        }
+      },
+    })
+  );
   app.get('*', (req, res) => res.sendFile(path.join(distPath, 'index.html')));
   app.listen(PORT, '0.0.0.0', () => console.log(`Server running on port ${PORT} (production)`));
 }

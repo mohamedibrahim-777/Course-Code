@@ -24,9 +24,12 @@ const Landing = lazy(() => import('./pages/Landing'));
 import Navbar from './components/Navbar';
 import LoadingScreen from './components/LoadingScreen';
 import PageLoader from './components/PageLoader';
-import AnimatedBackground from './components/AnimatedBackground';
 import ClickSpark from './components/ClickSpark';
-import Silk from './components/Silk';
+
+// Heavy decorative components — Three.js shader + animated bg are ~600KB combined.
+// Lazy-load so first paint isn't blocked; they fade in once loaded.
+const Silk = lazy(() => import('./components/Silk'));
+const AnimatedBackground = lazy(() => import('./components/AnimatedBackground'));
 
 const PageWrapper = ({ children }: { children: React.ReactNode }) => (
   <motion.div
@@ -72,13 +75,15 @@ const AppContent = () => {
   return (
     <div className={`${theme === 'dark' ? 'dark-bg' : 'light-bg'} min-h-screen font-sans flex flex-col relative`}>
       <div className="fixed inset-0 z-0 pointer-events-none opacity-60">
-        <Silk
-          speed={5}
-          scale={1}
-          color={theme === 'dark' ? '#1a2540' : '#7B7481'}
-          noiseIntensity={1.5}
-          rotation={0}
-        />
+        <Suspense fallback={null}>
+          <Silk
+            speed={5}
+            scale={1}
+            color={theme === 'dark' ? '#1a2540' : '#7B7481'}
+            noiseIntensity={1.5}
+            rotation={0}
+          />
+        </Suspense>
       </div>
       <ClickSpark
         sparkColor={theme === 'dark' ? '#ffffff' : '#0077FF'}
@@ -147,7 +152,9 @@ export default function App() {
     <ThemeProvider>
       <AuthProvider>
         <Router>
-          <AnimatedBackground />
+          <Suspense fallback={null}>
+            <AnimatedBackground />
+          </Suspense>
           <AppContent />
         </Router>
       </AuthProvider>
