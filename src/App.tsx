@@ -7,18 +7,18 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'r
 import { AuthProvider, useAuth } from './AuthContext';
 import { ThemeProvider, useTheme } from './ThemeContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 
-// Pages
-import Login from './pages/Login';
-import Register from './pages/Register';
-import StudentDashboard from './pages/StudentDashboard';
-import AdminDashboard from './pages/AdminDashboard';
-import HODDashboard from './pages/HODDashboard';
-import CourseView from './pages/CourseView';
-import Profile from './pages/Profile';
-import Settings from './pages/Settings';
-import Landing from './pages/Landing';
+// Pages — lazy-loaded so each route ships in its own chunk and the initial bundle stays small.
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
+const StudentDashboard = lazy(() => import('./pages/StudentDashboard'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const HODDashboard = lazy(() => import('./pages/HODDashboard'));
+const CourseView = lazy(() => import('./pages/CourseView'));
+const Profile = lazy(() => import('./pages/Profile'));
+const Settings = lazy(() => import('./pages/Settings'));
+const Landing = lazy(() => import('./pages/Landing'));
 
 // Components
 import Navbar from './components/Navbar';
@@ -91,25 +91,27 @@ const AppContent = () => {
       <Navbar />
       <AnimatePresence>{pageLoading && <PageLoader />}</AnimatePresence>
       <main className="container mx-auto px-4 py-8 flex-1">
-        <AnimatePresence mode="popLayout">
-          <Routes location={location} key={location.pathname}>
-            <Route path="/" element={<PageWrapper><Landing /></PageWrapper>} />
-            <Route path="/login" element={!user ? <PageWrapper><Login /></PageWrapper> : <Navigate to="/dashboard" />} />
-            <Route path="/register" element={!user ? <PageWrapper><Register /></PageWrapper> : <Navigate to="/dashboard" />} />
+        <Suspense fallback={<PageLoader />}>
+          <AnimatePresence mode="popLayout">
+            <Routes location={location} key={location.pathname}>
+              <Route path="/" element={<PageWrapper><Landing /></PageWrapper>} />
+              <Route path="/login" element={!user ? <PageWrapper><Login /></PageWrapper> : <Navigate to="/dashboard" />} />
+              <Route path="/register" element={!user ? <PageWrapper><Register /></PageWrapper> : <Navigate to="/dashboard" />} />
 
-            <Route path="/dashboard" element={
-              <PageWrapper>
-                {user?.role === 'hod' ? <HODDashboard /> :
-                 user?.role === 'staff' ? <AdminDashboard /> :
-                 user ? <StudentDashboard /> : <Navigate to="/login" />}
-              </PageWrapper>
-            } />
+              <Route path="/dashboard" element={
+                <PageWrapper>
+                  {user?.role === 'hod' ? <HODDashboard /> :
+                   user?.role === 'staff' ? <AdminDashboard /> :
+                   user ? <StudentDashboard /> : <Navigate to="/login" />}
+                </PageWrapper>
+              } />
 
-            <Route path="/course/:id" element={user ? <PageWrapper><CourseView /></PageWrapper> : <Navigate to="/login" />} />
-            <Route path="/profile" element={user ? <PageWrapper><Profile /></PageWrapper> : <Navigate to="/login" />} />
-            <Route path="/settings" element={user ? <PageWrapper><Settings /></PageWrapper> : <Navigate to="/login" />} />
-          </Routes>
-        </AnimatePresence>
+              <Route path="/course/:id" element={user ? <PageWrapper><CourseView /></PageWrapper> : <Navigate to="/login" />} />
+              <Route path="/profile" element={user ? <PageWrapper><Profile /></PageWrapper> : <Navigate to="/login" />} />
+              <Route path="/settings" element={user ? <PageWrapper><Settings /></PageWrapper> : <Navigate to="/login" />} />
+            </Routes>
+          </AnimatePresence>
+        </Suspense>
       </main>
       <Footer />
       </div>

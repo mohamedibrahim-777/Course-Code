@@ -1,4 +1,24 @@
 node_modules/
 uploads/
 dist/
+backups/
+
+# Environment files
 .env
+.env.local
+.env.*.local
+
+# SQLite database files
+database.db
+database.db-*
+*.db-shm
+*.db-wal
+*.backup-pre-*
+
+# Logs
+*.log
+server.log
+
+# OS
+.DS_Store
+Thumbs.db

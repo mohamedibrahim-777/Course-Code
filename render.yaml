@@ -1,0 +1,39 @@
+# Render blueprint — push this file to your repo, then in the Render dashboard:
+# New + → Blueprint → connect your repo → Render reads this and provisions.
+# Docs: https://render.com/docs/blueprint-spec
+#
+# Data lives in Supabase (Postgres + Storage), so this service is fully stateless
+# and runs on the free tier — no persistent disk needed.
+services:
+  - type: web
+    name: course-code
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000           # Render's expected internal port for free web services
+      - key: JWT_SECRET
+        generateValue: true    # Render generates a strong random value once
+      - key: SEED_PASSWORD
+        sync: false            # set in dashboard, never commit
+      - key: DATABASE_URL
+        sync: false            # Supabase Postgres pooler URI (port 5432, session mode)
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: SUPABASE_BUCKET
+        value: uploads
+      - key: CORS_ORIGINS
+        sync: false            # set to your https://course-code.onrender.com once deployed
+      - key: HOD_EMAIL
+        sync: false
+      - key: STAFF1_EMAIL
+        sync: false
+      - key: STAFF2_EMAIL
+        sync: false
