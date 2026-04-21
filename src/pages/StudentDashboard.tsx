@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../AuthContext';
 import { useCachedData } from '../services/dataCache';
 import SkeletonFallback from '../components/SkeletonFallback';
