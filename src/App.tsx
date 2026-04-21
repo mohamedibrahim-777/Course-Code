@@ -88,32 +88,26 @@ const AppContent = () => {
     return <LoadingScreen />;
   }
 
-  // WebGL rays shader burns GPU while animating. Show it only on the
-  // marketing-style routes, not on dashboards where users do real work.
-  const showShader = location.pathname === '/' || location.pathname === '/login' || location.pathname === '/register';
-
   return (
     <div className={`${theme === 'dark' ? 'dark-bg' : 'light-bg'} min-h-screen font-sans flex flex-col relative`}>
-      {showShader && (
-        <div className="fixed inset-0 z-0 pointer-events-none">
-          <Suspense fallback={null}>
-            <LightRays
-              raysOrigin="top-center"
-              raysColor={theme === 'dark' ? '#ffffff' : '#0077FF'}
-              raysSpeed={1}
-              lightSpread={0.5}
-              rayLength={3}
-              followMouse
-              mouseInfluence={0.1}
-              noiseAmount={0}
-              distortion={0}
-              pulsating={false}
-              fadeDistance={1}
-              saturation={1}
-            />
-          </Suspense>
-        </div>
-      )}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <Suspense fallback={null}>
+          <LightRays
+            raysOrigin="top-center"
+            raysColor={theme === 'dark' ? '#ffffff' : '#0077FF'}
+            raysSpeed={1}
+            lightSpread={0.5}
+            rayLength={3}
+            followMouse
+            mouseInfluence={0.1}
+            noiseAmount={0}
+            distortion={0}
+            pulsating={false}
+            fadeDistance={1}
+            saturation={1}
+          />
+        </Suspense>
+      </div>
       <ClickSpark
         sparkColor={theme === 'dark' ? '#ffffff' : '#0077FF'}
         sparkSize={10}
