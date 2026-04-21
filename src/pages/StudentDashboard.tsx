@@ -15,15 +15,12 @@ export default function StudentDashboard() {
   const { data, loading, refresh } = useCachedData(
     'student-dashboard',
     async () => {
-      const [enrolledRes, browseRes, progressRes] = await Promise.all([
-        fetch('/api/courses?filter=enrolled', { headers: { Authorization: `Bearer ${token}` } }),
-        fetch('/api/courses?filter=browse', { headers: { Authorization: `Bearer ${token}` } }),
-        fetch('/api/progress', { headers: { Authorization: `Bearer ${token}` } }),
-      ]);
+      const res = await fetch('/api/analytics/dashboard', { headers: { Authorization: `Bearer ${token}` } });
+      const d = res.ok ? await res.json() : {};
       return {
-        enrolledCourses: (enrolledRes.ok ? await enrolledRes.json() : []) as Course[],
-        availableCourses: (browseRes.ok ? await browseRes.json() : []) as Course[],
-        progress: progressRes.ok ? await progressRes.json() : [],
+        enrolledCourses: (d.enrolledCourses ?? []) as Course[],
+        availableCourses: (d.availableCourses ?? []) as Course[],
+        progress: d.progress ?? [],
       };
     },
     [token]

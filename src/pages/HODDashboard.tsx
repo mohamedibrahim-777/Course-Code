@@ -16,20 +16,14 @@ export default function HODDashboard() {
   const { data, loading, error } = useCachedData(
     'hod-dashboard',
     async () => {
-      const headers = { Authorization: `Bearer ${token}` };
-      const [staffRes, studentsRes, coursesRes, summaryRes, focusRes] = await Promise.all([
-        fetch('/api/analytics/staff', { headers }),
-        fetch('/api/analytics/students', { headers }),
-        fetch('/api/courses', { headers }),
-        fetch('/api/analytics/summary', { headers }),
-        fetch('/api/analytics/focus', { headers }),
-      ]);
+      const res = await fetch('/api/analytics/dashboard', { headers: { Authorization: `Bearer ${token}` } });
+      const d = res.ok ? await res.json() : {};
       return {
-        staff: staffRes.ok ? await staffRes.json() : [],
-        students: studentsRes.ok ? await studentsRes.json() : [],
-        courses: coursesRes.ok ? await coursesRes.json() : [],
-        summary: summaryRes.ok ? await summaryRes.json() : {},
-        focusData: focusRes.ok ? await focusRes.json() : [],
+        staff: d.staff ?? [],
+        students: d.students ?? [],
+        courses: d.courses ?? [],
+        summary: d.summary ?? {},
+        focusData: d.focusData ?? [],
       };
     },
     [token]

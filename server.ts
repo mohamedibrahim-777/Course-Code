@@ -820,6 +820,121 @@ app.get('/api/analytics/focus', authenticate, requireStaff, asyncH(async (_req: 
   res.json(rows);
 }));
 
+// Combined dashboard endpoint — returns everything the dashboard needs in one
+// request, so the client doesn't pay HTTP overhead + JWT verify × N calls.
+// Shape depends on the caller's role.
+app.get('/api/analytics/dashboard', authenticate, asyncH(async (req: any, res) => {
+  const role = req.user.role;
+  const uid = req.user.id;
+
+  if (role === 'student') {
+    const [enrolledCourses, availableCourses, progress] = await Promise.all([
+      qAll(`
+        SELECT c.*, u.name AS created_by_name, 1 AS enrolled
+        FROM courses c
+        INNER JOIN course_enrollments e ON e.course_id = c.id
+        LEFT JOIN users u ON c.created_by = u.id
+        WHERE e.user_id = $1
+        ORDER BY e.enrolled_at DESC
+        LIMIT 50
+      `, [uid]),
+      qAll(`
+        SELECT c.*, u.name AS created_by_name
+        FROM courses c
+        LEFT JOIN users u ON c.created_by = u.id
+        WHERE c.id NOT IN (SELECT course_id FROM course_enrollments WHERE user_id = $1)
+        ORDER BY c.created_at DESC
+        LIMIT 50
+      `, [uid]),
+      qAll('SELECT * FROM progress WHERE user_id = $1', [uid]),
+    ]);
+    return res.json({ enrolledCourses, availableCourses, progress });
+  }
+
+  // staff/hod: analytics bundle
+  const [summary, courses, students, focusData, staff, allComments] = await Promise.all([
+    (async () => {
+      const [students, staff, courses, lessons, completed, enrollments] = await Promise.all([
+        qOne<{ c: number }>("SELECT COUNT(*)::int AS c FROM users WHERE role = 'student'"),
+        qOne<{ c: number }>("SELECT COUNT(*)::int AS c FROM users WHERE role = 'staff'"),
+        qOne<{ c: number }>('SELECT COUNT(*)::int AS c FROM courses'),
+        qOne<{ c: number }>('SELECT COUNT(*)::int AS c FROM lessons'),
+        qOne<{ c: number }>('SELECT COUNT(*)::int AS c FROM progress'),
+        qOne<{ c: number }>('SELECT COUNT(*)::int AS c FROM course_enrollments'),
+      ]);
+      const totalStudents = students!.c;
+      const totalLessons = lessons!.c;
+      const totalCompleted = completed!.c;
+      return {
+        totalStudents,
+        totalStaff: staff!.c,
+        totalCourses: courses!.c,
+        totalLessons,
+        totalCompleted,
+        totalEnrollments: enrollments!.c,
+        avgProgress: totalLessons > 0 && totalStudents > 0
+          ? Math.round((totalCompleted / (totalStudents * totalLessons)) * 100)
+          : 0,
+      };
+    })(),
+    qAll(`
+      SELECT c.*, u.name AS created_by_name
+      FROM courses c
+      LEFT JOIN users u ON c.created_by = u.id
+      ORDER BY c.created_at DESC
+      LIMIT 50
+    `),
+    qAll(`
+      SELECT u.id, u.name, u.email,
+             (SELECT COUNT(*)::int FROM progress WHERE user_id = u.id) AS lessons_completed,
+             (SELECT COUNT(*)::int FROM course_enrollments WHERE user_id = u.id) AS enrollments
+      FROM users u WHERE u.role = 'student'
+    `),
+    qAll(`
+      SELECT u.id, u.name, u.email,
+             COALESCE(SUM(CASE WHEN f.type = 'focus' THEN f.duration ELSE 0 END), 0)::int AS total_focus_seconds,
+             COALESCE(SUM(CASE WHEN f.type = 'break' THEN f.duration ELSE 0 END), 0)::int AS total_break_seconds,
+             COUNT(CASE WHEN f.type = 'focus' THEN 1 END)::int AS focus_count,
+             COUNT(CASE WHEN f.type = 'break' THEN 1 END)::int AS break_count,
+             MAX(f.completed_at) AS last_session
+      FROM users u
+      LEFT JOIN focus_sessions f ON f.user_id = u.id
+      WHERE u.role = 'student'
+      GROUP BY u.id, u.name, u.email
+      ORDER BY total_focus_seconds DESC
+    `),
+    role === 'hod'
+      ? qAll(`
+          SELECT u.id, u.name, u.email,
+                 (SELECT COUNT(*)::int FROM courses WHERE created_by = u.id) AS courses_created
+          FROM users u WHERE u.role = 'staff'
+        `)
+      : Promise.resolve([]),
+    role === 'staff' || role === 'hod'
+      ? qAll<any>(`
+          SELECT c.*, u.name AS user_name, u.role AS user_role, u.profile_pic,
+                 l.title AS lesson_title, l.course_id, co.title AS course_title, co.created_by AS course_created_by
+          FROM comments c
+          LEFT JOIN users u ON c.user_id = u.id
+          LEFT JOIN lessons l ON c.lesson_id = l.id
+          LEFT JOIN courses co ON l.course_id = co.id
+          ${role === 'hod' ? '' : 'WHERE co.created_by = $1'}
+          ORDER BY c.created_at DESC
+          LIMIT 50
+        `, role === 'hod' ? undefined : [uid]).then((rows: any[]) => {
+          for (const r of rows) delete r.course_created_by;
+          return rows;
+        })
+      : Promise.resolve([]),
+  ]);
+
+  if (role === 'hod') {
+    return res.json({ summary, courses, students, focusData, staff, allComments });
+  }
+  // staff
+  return res.json({ summary, courses, students, focusData, allComments });
+}));
+
 // ========== PROFILE ==========
 app.get('/api/profile', authenticate, asyncH(async (req: any, res) => {
   const user = await qOne('SELECT id, name, email, role, bio, profile_pic FROM users WHERE id = $1', [req.user.id]);

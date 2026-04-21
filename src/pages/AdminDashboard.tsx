@@ -27,19 +27,14 @@ export default function AdminDashboard() {
   const { data, loading, refresh } = useCachedData(
     'admin-dashboard',
     async () => {
-      const [coursesRes, studentsRes, summaryRes, focusRes, commentsRes] = await Promise.all([
-        fetch('/api/courses', { headers }),
-        fetch('/api/analytics/students', { headers }),
-        fetch('/api/analytics/summary', { headers }),
-        fetch('/api/analytics/focus', { headers }),
-        fetch('/api/comments/all', { headers }),
-      ]);
+      const res = await fetch('/api/analytics/dashboard', { headers });
+      const d = res.ok ? await res.json() : {};
       return {
-        courses: (await coursesRes.json()) as Course[],
-        students: await studentsRes.json(),
-        summary: await summaryRes.json(),
-        focusData: await focusRes.json(),
-        allComments: await commentsRes.json(),
+        courses: (d.courses ?? []) as Course[],
+        students: d.students ?? [],
+        summary: d.summary ?? {},
+        focusData: d.focusData ?? [],
+        allComments: d.allComments ?? [],
       };
     },
     [token]
