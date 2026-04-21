@@ -50,9 +50,9 @@ import ClickSpark from './components/ClickSpark';
 import TopProgressBar from './components/TopProgressBar';
 import SkeletonFallback from './components/SkeletonFallback';
 
-// Heavy decorative components — Three.js shader + animated bg are ~600KB combined.
+// Heavy decorative components — WebGL shader + animated bg.
 // Lazy-load so first paint isn't blocked; they fade in once loaded.
-const Silk = lazy(() => import('./components/Silk'));
+const LightRays = lazy(() => import('./components/LightRays'));
 const AnimatedBackground = lazy(() => import('./components/AnimatedBackground'));
 
 // Smooth page enter: 220ms opacity + tiny 6px lift, ease-out feels snappy not laggy.
@@ -88,21 +88,28 @@ const AppContent = () => {
     return <LoadingScreen />;
   }
 
-  // Silk WebGL shader is gorgeous but constantly burns GPU. Show it only on
-  // the marketing-style routes, not on dashboards where users do real work.
+  // WebGL rays shader burns GPU while animating. Show it only on the
+  // marketing-style routes, not on dashboards where users do real work.
   const showShader = location.pathname === '/' || location.pathname === '/login' || location.pathname === '/register';
 
   return (
     <div className={`${theme === 'dark' ? 'dark-bg' : 'light-bg'} min-h-screen font-sans flex flex-col relative`}>
       {showShader && (
-        <div className="fixed inset-0 z-0 pointer-events-none opacity-60">
+        <div className="fixed inset-0 z-0 pointer-events-none">
           <Suspense fallback={null}>
-            <Silk
-              speed={5}
-              scale={1}
-              color={theme === 'dark' ? '#1a2540' : '#7B7481'}
-              noiseIntensity={1.5}
-              rotation={0}
+            <LightRays
+              raysOrigin="top-center"
+              raysColor={theme === 'dark' ? '#ffffff' : '#0077FF'}
+              raysSpeed={1}
+              lightSpread={0.5}
+              rayLength={3}
+              followMouse
+              mouseInfluence={0.1}
+              noiseAmount={0}
+              distortion={0}
+              pulsating={false}
+              fadeDistance={1}
+              saturation={1}
             />
           </Suspense>
         </div>

@@ -27,7 +27,7 @@ export default defineConfig(({mode}) => {
         output: {
           manualChunks: (id) => {
             if (!id.includes('node_modules')) return;
-            if (id.includes('three') || id.includes('@react-three')) return 'three';
+            if (id.includes('ogl')) return 'gl';
             if (id.includes('framer-motion') || id.includes('motion')) return 'framer';
             if (id.includes('react-router')) return 'router';
             if (id.includes('react-dom') || id.includes('react/') || id.includes('scheduler')) return 'react';
