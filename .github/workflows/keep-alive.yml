@@ -1,0 +1,31 @@
+# Pings the Render /health endpoint every 10 minutes so the free-tier web
+# service never idles out and spins down (which would make the next real user
+# wait 30–50 s for a cold start). Runs entirely on GitHub's infrastructure —
+# no external uptime monitor required.
+#
+# Scheduled workflows require at least one commit on the default branch and
+# may be delayed or skipped when GitHub is under load. That's fine: worst case
+# the service sleeps once in a while; it won't sleep permanently.
+
+name: Keep Render awake
+
+on:
+  schedule:
+    # Every 10 minutes. Render's free tier idles after 15 min of inactivity,
+    # so a 10-min cadence keeps it awake with margin for skipped runs.
+    - cron: '*/10 * * * *'
+  workflow_dispatch: {} # lets you trigger it manually from the Actions tab
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping /health
+        run: |
+          set -eu
+          URL="https://course-code.onrender.com/health"
+          # -f: fail on HTTP errors. -s: silent. --retry: resilient to flakes.
+          # Don't fail the workflow on a bad response — we still want future
+          # pings to run if the service happens to be down once.
+          curl -fsS --retry 3 --retry-delay 5 --max-time 60 "$URL" || \
+            echo "Ping failed — service may be sleeping or deploying."
