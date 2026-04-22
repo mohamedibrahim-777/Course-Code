@@ -12,7 +12,6 @@ interface ManagedUser {
   name: string;
   email: string;
   role: 'student' | 'staff';
-  created_at: string;
 }
 
 export default function Settings() {

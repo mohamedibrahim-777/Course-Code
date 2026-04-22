@@ -944,7 +944,7 @@ app.get('/api/analytics/dashboard', authenticate, asyncH(async (req: any, res) =
 // List students + staff for the Settings → Manage Users panel.
 app.get('/api/users/manage', authenticate, requireHOD, asyncH(async (_req: any, res) => {
   const rows = await qAll(`
-    SELECT id, name, email, role, created_at
+    SELECT id, name, email, role
     FROM users
     WHERE role IN ('student', 'staff')
     ORDER BY role DESC, name ASC
