@@ -11,6 +11,7 @@ import helmet from 'helmet';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import { randomUUID } from 'crypto';
+import { Resend } from 'resend';
 
 dotenv.config();
 
@@ -41,6 +42,58 @@ if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
 }
 
 const SUPABASE_BUCKET = process.env.SUPABASE_BUCKET || 'uploads';
+
+// ========== EMAIL (Resend) ==========
+// If RESEND_API_KEY is missing the helper falls back to a console log so local
+// dev / preview environments keep working without credentials.
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+const EMAIL_FROM = process.env.EMAIL_FROM || 'Course Code <onboarding@resend.dev>';
+
+const sendOtpEmail = async (toEmail: string, otp: string, purpose: 'register' | 'change-email') => {
+  // Always log so production support can recover an OTP if delivery fails.
+  console.log(`\n========================================`);
+  console.log(`  ${purpose === 'register' ? 'Register' : 'Email-change'} OTP for ${toEmail}: ${otp}`);
+  console.log(`========================================\n`);
+
+  if (!resend) return { delivered: false, reason: 'no-api-key' as const };
+
+  const subject = purpose === 'register'
+    ? 'Your Course Code verification code'
+    : 'Confirm your new Course Code email';
+  const heading = purpose === 'register' ? 'Verify your email' : 'Confirm your new email';
+  const body = purpose === 'register'
+    ? 'Use the code below to finish creating your Course Code account.'
+    : 'Use the code below to confirm your new email address.';
+
+  const html = `
+    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#0a0a1a;color:#f5f5f5;border-radius:16px;">
+      <h1 style="margin:0 0 8px;font-size:22px;color:#0077FF;">Course Code</h1>
+      <h2 style="margin:0 0 12px;font-size:18px;font-weight:600;">${heading}</h2>
+      <p style="margin:0 0 24px;color:#a3a3a3;font-size:14px;line-height:1.5;">${body}</p>
+      <div style="background:#1a1a2e;border:1px solid #2a2a4a;border-radius:12px;padding:20px;text-align:center;margin-bottom:20px;">
+        <div style="font-family:monospace;font-size:32px;font-weight:700;letter-spacing:8px;color:#fff;">${otp}</div>
+      </div>
+      <p style="margin:0;color:#737373;font-size:12px;">This code expires in 10 minutes. If you didn't request this, ignore this email.</p>
+    </div>
+  `;
+
+  try {
+    const { error } = await resend.emails.send({
+      from: EMAIL_FROM,
+      to: toEmail,
+      subject,
+      html,
+    });
+    if (error) {
+      console.error('[resend] send failed:', error);
+      return { delivered: false, reason: 'send-error' as const };
+    }
+    return { delivered: true };
+  } catch (err) {
+    console.error('[resend] threw:', err);
+    return { delivered: false, reason: 'exception' as const };
+  }
+};
 
 // ========== DATABASE ==========
 const pool = new pg.Pool({
@@ -337,10 +390,11 @@ app.post('/api/auth/register-request', asyncH(async (req, res) => {
   await q('INSERT INTO otps (email, otp, expires_at) VALUES ($1, $2, $3)', [email, otp, expiresAt]);
   await q('INSERT INTO otp_requests (email) VALUES ($1)', [email]);
 
-  console.log(`\n========================================`);
-  console.log(`  OTP for ${email}: ${otp}`);
-  console.log(`========================================\n`);
-  res.json({ success: true, message: 'OTP sent! Check the server console.' });
+  const result = await sendOtpEmail(email, otp, 'register');
+  res.json({
+    success: true,
+    message: result.delivered ? 'OTP sent to your email.' : 'OTP generated (email delivery unavailable — check server console).',
+  });
 }));
 
 app.post('/api/auth/verify-register', asyncH(async (req, res) => {
@@ -404,9 +458,7 @@ app.post('/api/auth/change-email-request', authenticate, asyncH(async (req: any,
   await q('INSERT INTO otps (email, otp, expires_at) VALUES ($1, $2, $3)', [newEmail, otp, expiresAt]);
   await q('INSERT INTO otp_requests (email) VALUES ($1)', [newEmail]);
 
-  console.log(`\n========================================`);
-  console.log(`  Email change OTP for ${newEmail}: ${otp}`);
-  console.log(`========================================\n`);
+  await sendOtpEmail(newEmail, otp, 'change-email');
   res.json({ success: true });
 }));
 
