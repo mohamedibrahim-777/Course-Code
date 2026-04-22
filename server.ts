@@ -226,6 +226,11 @@ const requireStaff = (req: any, res: any, next: any) => {
   next();
 };
 
+const requireHOD = (req: any, res: any, next: any) => {
+  if (req.user.role !== 'hod') return res.status(403).json({ error: 'HOD only' });
+  next();
+};
+
 const isString = (v: any, max = 1000) => typeof v === 'string' && v.trim().length > 0 && v.length <= max;
 const sanitize = (v: string) => v.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '').trim();
 const escapeHtml = (s: string) =>
@@ -933,6 +938,49 @@ app.get('/api/analytics/dashboard', authenticate, asyncH(async (req: any, res) =
   }
   // staff
   return res.json({ summary, courses, students, focusData, allComments });
+}));
+
+// ========== USER MANAGEMENT (HOD only) ==========
+// List students + staff for the Settings → Manage Users panel.
+app.get('/api/users/manage', authenticate, requireHOD, asyncH(async (_req: any, res) => {
+  const rows = await qAll(`
+    SELECT id, name, email, role, created_at
+    FROM users
+    WHERE role IN ('student', 'staff')
+    ORDER BY role DESC, name ASC
+  `);
+  res.json(rows);
+}));
+
+// Delete a student or staff user. Cascades all child rows manually because the
+// schema lacks ON DELETE CASCADE. Staff-created courses are reassigned to the
+// requesting HOD so existing enrollments / lessons / progress aren't lost.
+app.delete('/api/users/:id', authenticate, requireHOD, asyncH(async (req: any, res) => {
+  const targetId = req.params.id;
+  if (targetId === req.user.id) return res.status(400).json({ error: 'Cannot delete yourself' });
+
+  const target = await qOne<{ id: string; role: string; email: string }>(
+    'SELECT id, role, email FROM users WHERE id = $1',
+    [targetId]
+  );
+  if (!target) return res.status(404).json({ error: 'User not found' });
+  if (target.role === 'hod') return res.status(403).json({ error: 'Cannot delete another HOD' });
+
+  await withTxn(async (c) => {
+    // Reparent comments first so the FK-less user_id reference doesn't dangle in lookups.
+    await c.query('DELETE FROM comments WHERE user_id = $1', [targetId]);
+    await c.query('DELETE FROM progress WHERE user_id = $1', [targetId]);
+    await c.query('DELETE FROM focus_sessions WHERE user_id = $1', [targetId]);
+    await c.query('DELETE FROM course_enrollments WHERE user_id = $1', [targetId]);
+    await c.query('DELETE FROM otps WHERE email = $1', [target.email]);
+    await c.query('DELETE FROM otp_requests WHERE email = $1', [target.email]);
+    if (target.role === 'staff') {
+      await c.query('UPDATE courses SET created_by = $1 WHERE created_by = $2', [req.user.id, targetId]);
+    }
+    await c.query('DELETE FROM users WHERE id = $1', [targetId]);
+  });
+
+  res.json({ success: true });
 }));
 
 // ========== PROFILE ==========
